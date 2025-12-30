@@ -6,20 +6,20 @@ import 'package:spese_casa_nuovo/screens/settings.dart';
 
 class CategoryList extends StatefulWidget {
   final Function callback;
-  const CategoryList(this.callback, {Key? key}) : super(key: key);
+  const CategoryList(this.callback, {super.key});
 
   @override
-  _CategoryListState createState() => _CategoryListState();
+  CategoryListState createState() => CategoryListState();
 }
 
-class _CategoryListState extends State<CategoryList> {
+class CategoryListState extends State<CategoryList> {
   List<Category> categoryList = kCategoriesList;
   CategoryFilter categoryFilter = CategoryFilter(filterBoth: true);
   Category? selected;
 
   Future<List<Category>> getList() => CategoryDao().all(categoryFilter);
 
-  refresh(Category? item) {
+  void refresh(Category? item) {
     setState(() {
       // selected = item;
     });
@@ -101,7 +101,7 @@ class CategoryItem extends StatelessWidget {
   final Category item;
   final Function callback;
 
-  const CategoryItem(this.item, this.callback, {Key? key}) : super(key: key);
+  const CategoryItem(this.item, this.callback, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +136,7 @@ class CategoryItem extends StatelessWidget {
                       decoration: BoxDecoration(
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.yellow.shade600.withOpacity(0.7),
+                            color: Colors.yellow.shade600.withValues(alpha: 0.7),
                             spreadRadius: 2,
                             blurRadius: 0,
                             offset: const Offset(
