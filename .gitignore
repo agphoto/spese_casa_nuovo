@@ -4,6 +4,7 @@
 # 2. ECCEZIONI: Cosa NON ignorare
 !.gitignore
 !pubspec.yaml
+!analysis_options.yaml
 !README.md
 
 # 3. ECCEZIONI CARTELLE: 
@@ -14,7 +15,24 @@
 !assets/
 !assets/**
 
+!android/
+!android/**
+
+!ios/
+!ios/**
+
+!web/
+!web/**
+
+!linux/
+!linux/**
+
+
+
 # 4. SICUREZZA (Opzionale ma consigliato): 
 # Se vuoi essere certo che la build non entri mai
 /build/
 /.dart_tool/
+/.idea/
+/.vscode/
+pubspec.lock
