@@ -6,7 +6,7 @@ import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 
 class DbBackupScreen extends StatefulWidget {
-  const DbBackupScreen({Key? key}) : super(key: key);
+  const DbBackupScreen({super.key}) ;
   static String route = "/db_backup_screen";
   @override
   _DbBackupScreenState createState() => _DbBackupScreenState();
@@ -46,13 +46,10 @@ class _DbBackupScreenState extends State<DbBackupScreen> {
         }));
   }
 
-  _exportDb() async {
+  void _exportDb() async {
     if (_controller.text.isEmpty) return;
     // User? user = await UserDao().userById(1);
-    String url = ENDPOINT +
-        GetIt.instance.get<AppSettings>().udid +
-        "/" +
-        _controller.text;
+    String url = "$ENDPOINT${GetIt.instance.get<AppSettings>().udid}/${_controller.text}";
     http
         .post(Uri.parse(url /* "http://192.168.1.43/site/upload" */),
             headers: {'Content-type': 'application/json'}, body: _exportedDb)

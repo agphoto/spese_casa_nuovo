@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 class EventForm extends StatefulWidget {
   List<Category> categories = [];
   Event? event;
-  EventForm({required this.categories, this.event, Key? key}) : super(key: key);
+  EventForm({required this.categories, this.event,  super.key});
 
   @override
   _EventFormState createState() => _EventFormState();
@@ -37,7 +37,7 @@ class _EventFormState extends State<EventForm> {
     getFilteredCategory();
   }
 
-  getFilteredCategory() async {
+  void getFilteredCategory() async {
     CategoryFilter filter = CategoryFilter(
         filterBoth: _inSwitch && _outSwitch,
         filterIn: _inSwitch,

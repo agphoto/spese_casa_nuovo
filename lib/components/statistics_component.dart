@@ -7,7 +7,7 @@ import 'package:pie_chart/pie_chart.dart';
 import 'package:community_charts_flutter/community_charts_flutter.dart' as charts;
 
 class StatisticsComponent extends StatefulWidget {
-  const StatisticsComponent({Key? key}) : super(key: key);
+  const StatisticsComponent({super.key}) ;
 
   @override
   _StatisticsComponentState createState() => _StatisticsComponentState();
@@ -49,7 +49,7 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
   Map<String, double> buildInDataMap() {
     Map<String, double> dataMap = {};
     for (var item in eIn) {
-      int cat = item.idCategory;
+      //int cat = item.idCategory;
       String label =
           c.firstWhere((element) => element.id == item.idCategory).label;
       dataMap[label] = (dataMap[label] ?? 0) + item.amount;
@@ -81,11 +81,8 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
     if (model.hasDatumSelection) {
       return model.selectedDatum
           .map((element) =>
-              DateFormat(DateFormat.YEAR_ABBR_MONTH_DAY)
-                  .format(element.datum.time) +
-              " : " +
-              element.datum.sales.toString() +
-              "€")
+              "${DateFormat(DateFormat.YEAR_ABBR_MONTH_DAY)
+                  .format(element.datum.time)} : ${element.datum.sales}€")
           .toList()
           .map((e) => Text(e.toString()))
           .toList();

@@ -11,7 +11,7 @@ class CategoryProvider with ChangeNotifier {
 
   Category? get category => _category;
 
-  toNull() {
+  void toNull() {
     _category = null;
     notifyListeners();
   }

@@ -5,7 +5,7 @@ import 'package:spese_casa_nuovo/models/all_models.dart';
 import 'package:intl/intl.dart';
 
 class FilterForm extends StatefulWidget {
-  const FilterForm({Key? key}) : super(key: key);
+  const FilterForm({super.key});
   // bool _isSwitched = false;
   // bool _isChecked = false;
   @override

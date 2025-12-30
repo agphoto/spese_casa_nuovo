@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 class EventsList extends StatefulWidget {
   final EventFilter _filter;
   final List<Category> categories;
-  const EventsList(this._filter, this.categories, {Key? key}) : super(key: key);
+  const EventsList(this._filter, this.categories, { super.key});
 
   @override
   _EventsListState createState() => _EventsListState();
@@ -23,7 +23,7 @@ class _EventsListState extends State<EventsList> {
     super.initState();
   }
 
-  callback() {
+  void callback() {
     setState(() {});
   }
 
@@ -137,8 +137,8 @@ class EventItem extends StatelessWidget {
   final Category _category;
   final Function callback;
 
-  const EventItem(this._event, this._category, this.callback, {Key? key})
-      : super(key: key);
+  const EventItem(this._event, this._category, this.callback, {super.key})
+      ;
 
   void longPress(BuildContext context, List<Category> categories) {
     showModalBottomSheet(
@@ -151,7 +151,7 @@ class EventItem extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.yellow.shade600.withOpacity(0.7),
+              color: Colors.yellow.shade600.withValues(alpha: 0.7),
               spreadRadius: 2,
               blurRadius: 0,
               offset: const Offset(0, 0), // changes position of shadow

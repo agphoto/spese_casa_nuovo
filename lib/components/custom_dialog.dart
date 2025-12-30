@@ -12,12 +12,12 @@ class CustomDialogBox extends StatefulWidget {
   final Image img = Image.asset("assets/images/gear64.png");
 
   CustomDialogBox({
-    Key? key,
+    super.key,
     required this.title,
     required this.descriptions,
     required this.text,
     required this.customWidget,
-  }) : super(key: key);
+  })  ;
 
   @override
   _CustomDialogBoxState createState() => _CustomDialogBoxState();
@@ -36,7 +36,7 @@ class _CustomDialogBoxState extends State<CustomDialogBox> {
     );
   }
 
-  contentBox(context) {
+  Stack contentBox(dynamic context) {
     return Stack(
       children: <Widget>[
         Container(
@@ -105,7 +105,7 @@ class _CustomDialogBoxState extends State<CustomDialogBox> {
 }
 
 class Dialogs extends StatefulWidget {
-  const Dialogs({Key? key}) : super(key: key);
+  const Dialogs({super.key})  ;
 
   @override
   _DialogsState createState() => _DialogsState();

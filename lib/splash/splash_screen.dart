@@ -4,16 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:spese_casa_nuovo/main.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key}) ;
 
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  startTime() async {
-    var _duration = const Duration(seconds: 2);
-    return Timer(_duration, navigationPage);
+  Future<Timer> startTime() async {
+    var duration = const Duration(seconds: 2);
+    return Timer(duration, navigationPage);
   }
 
   void navigationPage() {

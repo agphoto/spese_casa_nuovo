@@ -7,7 +7,7 @@ import 'package:spese_casa_nuovo/main.dart';
 import 'package:spese_casa_nuovo/models/all_models.dart';
 import 'package:spese_casa_nuovo/screens/dbbackup.dart';
 import 'package:spese_casa_nuovo/screens/dbrestore.dart';
-import 'package:quickalert/quickalert.dart';
+
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -19,7 +19,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  callBack() {
+  void callBack() {
     setState(() {});
   }
 
@@ -111,7 +111,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.yellow.shade600.withOpacity(0.7),
+                    color: Colors.yellow.shade600.withValues(alpha: 0.7),
                     spreadRadius: 2,
                     blurRadius: 0,
                     offset: const Offset(0, 0), // changes position of shadow
@@ -145,10 +145,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 class CategoryForm extends StatefulWidget {
   Category? selectedCategory;
   Function callback;
-  CategoryForm({Category? category, required Function pCallback, Key? key})
+  CategoryForm({Category? category, required Function pCallback, super.key})
       : selectedCategory = category,
-        callback = pCallback,
-        super(key: key);
+        callback = pCallback ;
 
   @override
   _CategoryFormState createState() => _CategoryFormState();
@@ -220,7 +219,6 @@ class _CategoryFormState extends State<CategoryForm> {
                               item.idNature = Nature.IN;
                             });
                           },
-                          child: Image.asset('assets/images/add.png'),
                           style: ElevatedButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10.0),
@@ -233,6 +231,7 @@ class _CategoryFormState extends State<CategoryForm> {
                             onPrimary: Colors.grey.shade500,
                             */
                           ),
+                          child: Image.asset('assets/images/add.png'),
                         ),
                         ElevatedButton(
                           onPressed: () {
@@ -241,7 +240,6 @@ class _CategoryFormState extends State<CategoryForm> {
                               item.idNature = Nature.OUT;
                             });
                           },
-                          child: Image.asset('assets/images/minus32.png'),
                           style: ElevatedButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10.0),
@@ -254,6 +252,7 @@ class _CategoryFormState extends State<CategoryForm> {
                             onPrimary: Colors.black,
                             */
                           ),
+                          child: Image.asset('assets/images/minus32.png'),
                         ),
                       ],
                     ),

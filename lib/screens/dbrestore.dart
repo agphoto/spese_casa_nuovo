@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import '../models/all_models.dart';
 
 class DbRestoreScreen extends StatefulWidget {
-  const DbRestoreScreen({Key? key}) : super(key: key);
+  const DbRestoreScreen({super.key}) ;
   static String route = "/_db_restore_screen";
   @override
   State<DbRestoreScreen> createState() => _DbRestoreScreenState();
@@ -22,7 +22,7 @@ class _DbRestoreScreenState extends State<DbRestoreScreen> {
   bool _isDisabled = true;
   String _importButtonText = "Import";
   String _currentUdid = "";
-  final TextEditingController _controller = TextEditingController();
+  // final TextEditingController _controller = TextEditingController();
 
   @override
   void initState() {
@@ -33,22 +33,22 @@ class _DbRestoreScreenState extends State<DbRestoreScreen> {
 
   _DbRestoreScreenState();
 
-  _importDb(String filename) async {
+  void _importDb(String filename) async {
     http.get(
-      Uri.parse(ENDPOINT + "/load/" + filename + "/$_currentUdid"),
+      Uri.parse("$ENDPOINT/load/$filename/$_currentUdid"),
       headers: {'Content-type': 'application/json'},
     ).then((value) {
       _loadedDb = value.body;
 
       setState(() {
         _isDisabled = false;
-        _importButtonText = "Import " + filename;
+        _importButtonText = "Import $filename";
       });
     });
   }
 
-  _backuplist() async {
-    http.get(Uri.parse(ENDPOINT + "/backuplist/" + _currentUdid),
+  void _backuplist() async {
+    http.get(Uri.parse("$ENDPOINT/backuplist/$_currentUdid"),
         headers: {'Content-type': 'application/json'}).then(
       (value) {
         Iterable l = json.decode(value.body);
@@ -90,7 +90,6 @@ class _DbRestoreScreenState extends State<DbRestoreScreen> {
                     padding: const EdgeInsets.only(left: 4.0),
                     child: Container(
                       padding: const EdgeInsets.all(4),
-                      child: Text('Your Udid : $_currentUdid '),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: const Color.fromARGB(255, 189, 201, 18),
@@ -98,6 +97,7 @@ class _DbRestoreScreenState extends State<DbRestoreScreen> {
                         ),
                         borderRadius: BorderRadius.circular(5),
                       ),
+                      child: Text('Your Udid : $_currentUdid '),
                     ),
                   ),
                 ),

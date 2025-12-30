@@ -1,5 +1,6 @@
 import 'package:cool_alert/cool_alert.dart';
-import 'package:quickalert/quickalert.dart';
+
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:spese_casa_nuovo/components/event_form.dart';
@@ -23,13 +24,13 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key}) ;
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     FlutterUdid.udid.then((value) => {
-          print("udid:" + value),
+          print("udid:$value"),
           if (!GetIt.I.isRegistered<AppSettings>())
             GetIt.I.registerSingleton<AppSettings>(AppSettings(udid: value))
         });
@@ -113,7 +114,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+  const MyHomePage({super.key, required this.title})  ;
 
   static String route = "/home";
 
@@ -157,9 +158,9 @@ class _MyHomePageState extends State<MyHomePage> {
           passwd: 'passwd',
           uuid: const Uuid().v1());
       user.id = await UserDao().insert(user);
-      print("user created with id = " + user.id.toString());
+      print("user created with id = ${user.id}");
     } else {
-      print("User id" + value.uuid);
+      print("User id${value.uuid}");
     }
   }
 
@@ -193,7 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
-    final args = ModalRoute.of(context)!.settings.arguments;
+    // final args = ModalRoute.of(context)!.settings.arguments;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -350,7 +351,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.yellow.shade600.withOpacity(0.7),
+                          color: Colors.yellow.shade600.withValues(alpha: 0.7),
                           spreadRadius: 2,
                           blurRadius: 0,
                           offset:
@@ -399,7 +400,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.yellow.shade600.withOpacity(0.7),
+                          color: Colors.yellow.shade600.withValues(alpha: 0.7),
                           spreadRadius: 2,
                           blurRadius: 0,
                           offset:
