@@ -87,8 +87,8 @@ class _EventsListState extends State<EventsList> {
               return Center(
                 child: Container(
                   padding: const EdgeInsets.all(8.0),
-                  height: 100.0,
-                  width: 200.0,
+                  height: 150.0,
+                  width: 220.0,
                   decoration: BoxDecoration(
                       color: Colors.yellow.shade700,
                       border: Border.all(

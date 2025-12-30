@@ -52,8 +52,8 @@ class _CategoryListState extends State<CategoryList> {
               return Center(
                 child: Container(
                   padding: const EdgeInsets.all(8.0),
-                  height: 100.0,
-                  width: 200.0,
+                  height: 120.0,
+                  width: 250.0,
                   decoration: BoxDecoration(
                       color: Colors.yellow.shade700,
                       border: Border.all(
