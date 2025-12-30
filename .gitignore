@@ -1,0 +1,19 @@
+ # Ignora tutto
+ build/
+ .dart_tool/
+ .gradle/
+ .idea/
+ /*
+
+ # Permetti il file .gitignore (importante!)
+ !.gitignore
+
+ # Includi le cartelle che ti servono (aggiungi / e /**)
+ !lib/
+ !lib/**
+ !assets/
+ !assets/**
+
+ # Includi i file specifici della root
+ !pubspec.yaml
+ !README.md
