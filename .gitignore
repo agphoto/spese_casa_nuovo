@@ -1,19 +1,20 @@
- # Ignora tutto
- build/
- .dart_tool/
- .gradle/
- .idea/
- /*
+# 1. Ignora tutto il contenuto della cartella principale
+/*
 
- # Permetti il file .gitignore (importante!)
- !.gitignore
+# 2. ECCEZIONI: Cosa NON ignorare
+!.gitignore
+!pubspec.yaml
+!README.md
 
- # Includi le cartelle che ti servono (aggiungi / e /**)
- !lib/
- !lib/**
- !assets/
- !assets/**
+# 3. ECCEZIONI CARTELLE: 
+# Devi permettere la cartella stessa PRIMA del suo contenuto
+!lib/
+!lib/**
 
- # Includi i file specifici della root
- !pubspec.yaml
- !README.md
+!assets/
+!assets/**
+
+# 4. SICUREZZA (Opzionale ma consigliato): 
+# Se vuoi essere certo che la build non entri mai
+/build/
+/.dart_tool/
