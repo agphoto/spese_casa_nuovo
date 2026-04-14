@@ -36,3 +36,6 @@
 /.idea/
 /.vscode/
 pubspec.lock
+android/build/reports/problems/problems-report.html
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugins.cmake
