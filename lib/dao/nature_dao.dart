@@ -3,9 +3,9 @@ import 'package:spese_casa_nuovo/models/all_models.dart';
 import 'package:sembast/sembast.dart';
 
 class NatureDao {
-  static const String NATURE_STORE_NAME = "natures";
+  static const String natureStoreName = "natures";
 
-  final _carStore = intMapStoreFactory.store(NATURE_STORE_NAME);
+  final _carStore = intMapStoreFactory.store(natureStoreName);
 
   Future<Database> get _db async => await AppDatabase.instance.database;
 

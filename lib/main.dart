@@ -1,4 +1,4 @@
-import 'package:cool_alert/cool_alert.dart';
+import 'package:awesome_dialog/awesome_dialog.dart';
 
 
 import 'package:flutter/material.dart';
@@ -13,7 +13,6 @@ import 'package:spese_casa_nuovo/screens/settings.dart';
 import 'package:spese_casa_nuovo/screens/statistics.dart';
 import 'package:flutter_udid/flutter_udid.dart';
 import 'package:get_it/get_it.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:uuid/uuid.dart';
 import 'components/events_list.dart';
 import 'package:spese_casa_nuovo/components/filter_form.dart';
@@ -30,7 +29,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     FlutterUdid.udid.then((value) => {
-          print("udid:$value"),
+          debugPrint("udid:$value"),
           if (!GetIt.I.isRegistered<AppSettings>())
             GetIt.I.registerSingleton<AppSettings>(AppSettings(udid: value))
         });
@@ -134,15 +133,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  PackageInfo _packageInfo = PackageInfo(
-    appName: 'Unknown',
-    packageName: 'Unknown',
-    version: 'Unknown',
-    buildNumber: 'Unknown',
-    buildSignature: 'Unknown',
-    installerStore: 'Unknown',
-  );
-
   int _selectedNavigationItemIndex = 0;
   EventFilter _filter = EventFilter();
   List<Category> categories = [];
@@ -150,7 +140,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future getUser() async {
     User? value = await UserDao().userById(1);
     if (value == null) {
-      print("User is NULL");
+      debugPrint("User is NULL");
       User user = User(
           name: 'user_name',
           surname: 'user_sur',
@@ -158,9 +148,9 @@ class _MyHomePageState extends State<MyHomePage> {
           passwd: 'passwd',
           uuid: const Uuid().v1());
       user.id = await UserDao().insert(user);
-      print("user created with id = ${user.id}");
+      debugPrint("user created with id = ${user.id}");
     } else {
-      print("User id${value.uuid}");
+      debugPrint("User id${value.uuid}");
     }
   }
 
@@ -171,17 +161,9 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Future<void> _initPackageInfo() async {
-    final info = await PackageInfo.fromPlatform();
-    setState(() {
-      _packageInfo = info;
-    });
-  }
-
   @override
   void initState() {
     super.initState();
-    _initPackageInfo();
     // getUser();
     getCategoryList();
   }
@@ -206,26 +188,27 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             Text(widget.title),
             const SizedBox(height: 8.0),
-            Text('V$VERSION', style: Theme.of(context).textTheme.bodySmall),
+            Text('V$version', style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
         leading: IconButton(
           onPressed: () {
-            CoolAlert.show(
+            AwesomeDialog(
               context: context,
-              type: CoolAlertType.info,
-              text: 'Version $VERSION\ninfo@alessiogiuliano.it',
+              dialogType: DialogType.info,
               title: "Quanto Spendo ?",
+              desc: 'Version $version\ninfo@alessiogiuliano.it',
               titleTextStyle: const TextStyle(
                 color: Color.fromARGB(255, 212, 200, 23),
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
-              textTextStyle: TextStyle(
+              descTextStyle: TextStyle(
                 color: Colors.blue[500],
                 fontSize: 14,
               ),
-            );
+              btnOkOnPress: () {},
+            ).show();
           },
           icon: Image.asset(
             'assets/images/logo.png',

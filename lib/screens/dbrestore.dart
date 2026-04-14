@@ -15,14 +15,12 @@ class DbRestoreScreen extends StatefulWidget {
 }
 
 class _DbRestoreScreenState extends State<DbRestoreScreen> {
-  // String _selectedDb = "";
   List<String> _dbList = [];
-  String ENDPOINT = "http://api.alessiogiuliano.it/quantospendo";
+  String endpoint = "http://api.alessiogiuliano.it/quantospendo";
   String _loadedDb = "";
   bool _isDisabled = true;
   String _importButtonText = "Import";
   String _currentUdid = "";
-  // final TextEditingController _controller = TextEditingController();
 
   @override
   void initState() {
@@ -35,7 +33,7 @@ class _DbRestoreScreenState extends State<DbRestoreScreen> {
 
   void _importDb(String filename) async {
     http.get(
-      Uri.parse("$ENDPOINT/load/$filename/$_currentUdid"),
+      Uri.parse("$endpoint/load/$filename/$_currentUdid"),
       headers: {'Content-type': 'application/json'},
     ).then((value) {
       _loadedDb = value.body;
@@ -48,23 +46,21 @@ class _DbRestoreScreenState extends State<DbRestoreScreen> {
   }
 
   void _backuplist() async {
-    http.get(Uri.parse("$ENDPOINT/backuplist/$_currentUdid"),
-        headers: {'Content-type': 'application/json'}).then(
-      (value) {
-        Iterable l = json.decode(value.body);
-        setState(() {
-          _dbList = List<String>.from(l);
-        });
-
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('DB list reloaded')));
-      },
-    );
+    final response = await http.get(
+        Uri.parse("$endpoint/backuplist/$_currentUdid"),
+        headers: {'Content-type': 'application/json'});
+    if (!mounted) return;
+    final Iterable l = json.decode(response.body);
+    setState(() {
+      _dbList = List<String>.from(l);
+    });
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('DB list reloaded')));
   }
 
   @override
   Widget build(BuildContext context) {
-    int _selectedNavigationItemIndex = 1;
+    int selectedNavigationItemIndex = 1;
     return Scaffold(
       appBar: AppBar(
         title: const Column(
@@ -132,7 +128,6 @@ class _DbRestoreScreenState extends State<DbRestoreScreen> {
                 itemBuilder: (context, index) {
                   return Card(
                     shape: RoundedRectangleBorder(
-                      //<-- SEE HERE
                       side: const BorderSide(
                         color: Color.fromARGB(255, 231, 216, 80),
                       ),
@@ -141,7 +136,7 @@ class _DbRestoreScreenState extends State<DbRestoreScreen> {
                     child: ListTile(
                         title: Text(_dbList[index]),
                         onTap: () {
-                          print(_dbList[index]);
+                          debugPrint(_dbList[index]);
                           _importDb(_dbList[index]);
                         }),
                   );
@@ -151,23 +146,22 @@ class _DbRestoreScreenState extends State<DbRestoreScreen> {
             ElevatedButton(
                 onPressed: _isDisabled
                     ? null
-                    : () {
-                        AppDatabase.instance.importDb(_loadedDb).then((value) =>
-                            {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('DB imported'))),
-                              Navigator.pushReplacementNamed(
-                                  context, MyHomePage.route)
-                            });
+                    : () async {
+                        await AppDatabase.instance.importDb(_loadedDb);
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('DB imported')));
+                        Navigator.pushReplacementNamed(
+                            context, MyHomePage.route);
                       },
                 child: Text(_importButtonText))
           ],
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedNavigationItemIndex,
+        currentIndex: selectedNavigationItemIndex,
         onTap: (value) {
-          _selectedNavigationItemIndex = value;
+          selectedNavigationItemIndex = value;
           switch (value) {
             case 0:
               Navigator.pushReplacementNamed(context, MyHomePage.route);

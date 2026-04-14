@@ -154,8 +154,8 @@ class Nature {
     return data;
   }
 
-  static int IN = 0;
-  static int OUT = 1;
+  static const int inId = 0;
+  static const int outId = 1;
 }
 // --------------------
 // Category

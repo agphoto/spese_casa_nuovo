@@ -1,18 +1,19 @@
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:spese_casa_nuovo/dao/event_dao.dart';
 import 'package:spese_casa_nuovo/db/app_database.dart';
 import 'package:spese_casa_nuovo/models/all_models.dart';
 import 'package:sembast/sembast.dart';
 
 class CategoryDao {
-  static const String CATEGORY_STORE_NAME = "categories";
+  static const String categoryStoreName = "categories";
 
-  final _categoryStore = intMapStoreFactory.store(CATEGORY_STORE_NAME);
+  final _categoryStore = intMapStoreFactory.store(categoryStoreName);
 
   Future<Database> get _db async => await AppDatabase.instance.database;
 
   Future insert(Category category) async {
     await _categoryStore.add(await _db, category.toJson());
-    AppDatabase.instance.exportDb().then((value) => print(value));
+    AppDatabase.instance.exportDb().then((value) => debugPrint(value));
     return;
   }
 
@@ -20,7 +21,7 @@ class CategoryDao {
     final finder = Finder(filter: Filter.byKey(category.id));
     await _categoryStore.update(await _db, category.toJson(), finder: finder);
 
-    AppDatabase.instance.exportDb().then((value) => print(value));
+    AppDatabase.instance.exportDb().then((value) => debugPrint(value));
     return;
   }
 
@@ -35,9 +36,9 @@ class CategoryDao {
         await _db,
         finder: finder,
       );
-      print('Deleted category: $count');
+      debugPrint('Deleted category: $count');
     } else {
-      print('Category in use!');
+      debugPrint('Category in use!');
     }
     return count;
   }
@@ -46,15 +47,15 @@ class CategoryDao {
     late Filter f;
     if (filter.filterBoth) {
       f = Filter.or([
-        Filter.equals('idNature', Nature.IN),
-        Filter.equals('idNature', Nature.OUT)
+        Filter.equals('idNature', Nature.inId),
+        Filter.equals('idNature', Nature.outId)
       ]);
     }
     if (filter.filterIn) {
-      f = Filter.equals('idNature', Nature.IN);
+      f = Filter.equals('idNature', Nature.inId);
     }
     if (filter.filterOut) {
-      f = Filter.equals('idNature', Nature.OUT);
+      f = Filter.equals('idNature', Nature.outId);
     }
 
     final finder = Finder(sortOrders: [SortOrder('id')], filter: f);

@@ -108,7 +108,7 @@ class CategoryItem extends StatelessWidget {
     return Card(
       child: ListTile(
         dense: true,
-        leading: (item.idNature == Nature.IN)
+        leading: (item.idNature == Nature.inId)
             ? Image.asset(
                 'assets/images/add.png',
                 scale: 1.2,

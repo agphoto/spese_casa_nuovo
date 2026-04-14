@@ -20,7 +20,7 @@ class CustomDialogBox extends StatefulWidget {
   })  ;
 
   @override
-  _CustomDialogBoxState createState() => _CustomDialogBoxState();
+  State<CustomDialogBox> createState() => _CustomDialogBoxState();
 }
 
 class _CustomDialogBoxState extends State<CustomDialogBox> {
@@ -108,7 +108,7 @@ class Dialogs extends StatefulWidget {
   const Dialogs({super.key})  ;
 
   @override
-  _DialogsState createState() => _DialogsState();
+  State<Dialogs> createState() => _DialogsState();
 }
 
 class _DialogsState extends State<Dialogs> {

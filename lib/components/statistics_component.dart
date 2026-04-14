@@ -10,7 +10,7 @@ class StatisticsComponent extends StatefulWidget {
   const StatisticsComponent({super.key}) ;
 
   @override
-  _StatisticsComponentState createState() => _StatisticsComponentState();
+  State<StatisticsComponent> createState() => _StatisticsComponentState();
 }
 
 class _StatisticsComponentState extends State<StatisticsComponent> {

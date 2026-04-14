@@ -12,7 +12,7 @@ class EventsList extends StatefulWidget {
   const EventsList(this._filter, this.categories, { super.key});
 
   @override
-  _EventsListState createState() => _EventsListState();
+  State<EventsList> createState() => _EventsListState();
 }
 
 class _EventsListState extends State<EventsList> {
@@ -58,7 +58,7 @@ class _EventsListState extends State<EventsList> {
               double totale = 0.0;
               for (var item in events) {
                 totale = totale +
-                    (item.amount * (item.idNature == Nature.IN ? 1 : -1));
+                    (item.amount * (item.idNature == Nature.inId ? 1 : -1));
               }
               return ListView.builder(
                 itemCount: events.length + 1,

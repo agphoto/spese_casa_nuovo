@@ -9,12 +9,12 @@ class DbBackupScreen extends StatefulWidget {
   const DbBackupScreen({super.key}) ;
   static String route = "/db_backup_screen";
   @override
-  _DbBackupScreenState createState() => _DbBackupScreenState();
+  State<DbBackupScreen> createState() => _DbBackupScreenState();
 }
 
 class _DbBackupScreenState extends State<DbBackupScreen> {
   String _exportedDb = "";
-  String ENDPOINT = "http://api.alessiogiuliano.it/quantospendo/upload/";
+  String endpoint = "http://api.alessiogiuliano.it/quantospendo/upload/";
   final TextEditingController _controller = TextEditingController();
   bool buttonEnabled = false;
 
@@ -36,10 +36,6 @@ class _DbBackupScreenState extends State<DbBackupScreen> {
     );
   }
 
-  // String ENDPOINT = "http://192.168.1.43/upload/";
-
-  //String ENDPOINT = "http://www.quantospendo.local/upload/";
-
   _DbBackupScreenState() {
     AppDatabase.instance.exportDb().then((value) => setState(() {
           _exportedDb = value;
@@ -48,25 +44,20 @@ class _DbBackupScreenState extends State<DbBackupScreen> {
 
   void _exportDb() async {
     if (_controller.text.isEmpty) return;
-    // User? user = await UserDao().userById(1);
-    String url = "$ENDPOINT${GetIt.instance.get<AppSettings>().udid}/${_controller.text}";
-    http
-        .post(Uri.parse(url /* "http://192.168.1.43/site/upload" */),
-            headers: {'Content-type': 'application/json'}, body: _exportedDb)
-        .then((value) => {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(const SnackBar(content: Text('DB exported'))),
-              Navigator.pushReplacementNamed(context, MyHomePage.route)
-            });
+    String url = "$endpoint${GetIt.instance.get<AppSettings>().udid}/${_controller.text}";
+    await http.post(Uri.parse(url),
+        headers: {'Content-type': 'application/json'}, body: _exportedDb);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('DB exported')));
+    Navigator.pushReplacementNamed(context, MyHomePage.route);
   }
 
   @override
   Widget build(BuildContext context) {
-    int _selectedNavigationItemIndex = 1;
+    int selectedNavigationItemIndex = 1;
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -106,15 +97,11 @@ class _DbBackupScreenState extends State<DbBackupScreen> {
             )
           ],
         ),
-        // child: Text(
-        //   'Statistic Screen',
-        //   style: TextStyle(color: Colors.white),
-        // ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedNavigationItemIndex,
+        currentIndex: selectedNavigationItemIndex,
         onTap: (value) {
-          _selectedNavigationItemIndex = value;
+          selectedNavigationItemIndex = value;
           switch (value) {
             case 0:
               Navigator.pushReplacementNamed(context, MyHomePage.route);

@@ -3,9 +3,9 @@ import 'package:spese_casa_nuovo/models/all_models.dart';
 import 'package:sembast/sembast.dart';
 
 class UserDao {
-  static const String USER_STORE_NAME = "users";
+  static const String userStoreName = "users";
 
-  final _userStore = intMapStoreFactory.store(USER_STORE_NAME);
+  final _userStore = intMapStoreFactory.store(userStoreName);
 
   Future<Database> get _db async => await AppDatabase.instance.database;
 

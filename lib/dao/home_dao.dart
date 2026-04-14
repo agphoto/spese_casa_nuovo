@@ -3,9 +3,9 @@ import 'package:spese_casa_nuovo/models/all_models.dart';
 import 'package:sembast/sembast.dart';
 
 class HomeDao {
-  static const String HOME_STORE_NAME = "housing";
+  static const String homeStoreName = "housing";
 
-  final _carStore = intMapStoreFactory.store(HOME_STORE_NAME);
+  final _carStore = intMapStoreFactory.store(homeStoreName);
 
   Future<Database> get _db async => await AppDatabase.instance.database;
 

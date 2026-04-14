@@ -9,7 +9,7 @@ class FilterForm extends StatefulWidget {
   // bool _isSwitched = false;
   // bool _isChecked = false;
   @override
-  _FilterFormState createState() => _FilterFormState();
+  State<FilterForm> createState() => _FilterFormState();
 }
 
 class _FilterFormState extends State<FilterForm> {
@@ -44,7 +44,7 @@ class _FilterFormState extends State<FilterForm> {
   Widget build(BuildContext context) {
     //  EventFilter _filter = EventFilter();
 
-    Widget _buildDatetime({bool isDateTo = true}) {
+    Widget buildDatetime({bool isDateTo = true}) {
       final format = DateFormat("dd/MM/yyyy");
       return DateTimeField(
         format: format,
@@ -60,6 +60,7 @@ class _FilterFormState extends State<FilterForm> {
               initialDate: currentValue ?? DateTime.now(),
               lastDate: DateTime(2100));
           if (date != null) {
+            if (!context.mounted) return currentValue;
             final time = await showTimePicker(
               context: context,
               initialTime:
@@ -81,7 +82,7 @@ class _FilterFormState extends State<FilterForm> {
       );
     }
 
-    Widget _buildCategory() {
+    Widget buildCategory() {
       return DropdownButtonFormField<int>(
         decoration: InputDecoration(
           labelText: 'Categoria',
@@ -156,7 +157,7 @@ class _FilterFormState extends State<FilterForm> {
             ),
             Row(
               children: [
-                Expanded(child: _buildCategory()),
+                Expanded(child: buildCategory()),
                 Checkbox(
                   value: _catChk,
                   onChanged: (value) {
@@ -169,7 +170,7 @@ class _FilterFormState extends State<FilterForm> {
             ),
             Row(
               children: [
-                Expanded(child: _buildDatetime(isDateTo: false)),
+                Expanded(child: buildDatetime(isDateTo: false)),
                 Checkbox(
                   value: _fromChk,
                   onChanged: (value) {
@@ -182,7 +183,7 @@ class _FilterFormState extends State<FilterForm> {
             ),
             Row(
               children: [
-                Expanded(child: _buildDatetime(isDateTo: true)),
+                Expanded(child: buildDatetime(isDateTo: true)),
                 Checkbox(
                   value: _toChk,
                   onChanged: (value) {

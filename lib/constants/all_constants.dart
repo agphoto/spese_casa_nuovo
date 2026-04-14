@@ -1,7 +1,7 @@
 import 'package:spese_casa_nuovo/models/all_models.dart';
 
-const String VERSION = "4.0";
-const String DESCRIPTION = "Creation of new DB";
+const String version = "4.0";
+const String description = "Creation of new DB";
 
 final List<Nature> kNaturesList = [
   Nature(id: 0, label: 'IN'),

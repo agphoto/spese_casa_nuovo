@@ -7,12 +7,12 @@ import 'package:spese_casa_nuovo/models/all_models.dart';
 import 'package:intl/intl.dart';
 
 class EventForm extends StatefulWidget {
-  List<Category> categories = [];
-  Event? event;
-  EventForm({required this.categories, this.event,  super.key});
+  final List<Category> categories;
+  final Event? event;
+  const EventForm({required this.categories, this.event, super.key});
 
   @override
-  _EventFormState createState() => _EventFormState();
+  State<EventForm> createState() => _EventFormState();
 }
 
 class _EventFormState extends State<EventForm> {
@@ -47,15 +47,11 @@ class _EventFormState extends State<EventForm> {
       categories = value;
       setState(() {});
     });
-
-    // .where((element) =>
-    //     element.idNature == (_inSwitch ? Nature.IN : Nature.OUT))
-    // .toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    Widget _buildDatetime() {
+    Widget buildDatetime() {
       final format = DateFormat("dd/MM/yyyy");
       return DateTimeField(
         format: format,
@@ -72,6 +68,7 @@ class _EventFormState extends State<EventForm> {
               initialDate: currentValue ?? DateTime.now(),
               lastDate: DateTime(2100));
           if (date != null) {
+            if (!context.mounted) return currentValue;
             final time = await showTimePicker(
               context: context,
               initialTime:
@@ -90,7 +87,7 @@ class _EventFormState extends State<EventForm> {
       );
     }
 
-    Widget _buildCategory() {
+    Widget buildCategory() {
       return DropdownButtonFormField<int>(
         decoration: InputDecoration(
           labelText: 'Categoria',
@@ -126,7 +123,7 @@ class _EventFormState extends State<EventForm> {
       );
     }
 
-    Widget _buildText() {
+    Widget buildText() {
       return TextFormField(
         style: Theme.of(context).textTheme.bodyLarge,
         initialValue: widget.event?.text,
@@ -144,7 +141,7 @@ class _EventFormState extends State<EventForm> {
       );
     }
 
-    Widget _buildAmount() {
+    Widget buildAmount() {
       return TextFormField(
         initialValue: widget.event?.amount.toString(),
         style: Theme.of(context).textTheme.bodyLarge,
@@ -187,7 +184,7 @@ class _EventFormState extends State<EventForm> {
                             setState(() {
                               if (widget.event != null) {
                                 widget.event!.idNature =
-                                    value ? Nature.IN : Nature.OUT;
+                                    value ? Nature.inId : Nature.outId;
                               }
                               _inSwitch = value;
                               _outSwitch = !value;
@@ -204,7 +201,7 @@ class _EventFormState extends State<EventForm> {
                             setState(() {
                               if (widget.event != null) {
                                 widget.event!.idNature =
-                                    value ? Nature.OUT : Nature.IN;
+                                    value ? Nature.outId : Nature.inId;
                               }
                               _outSwitch = value;
                               _inSwitch = !value;
@@ -220,23 +217,23 @@ class _EventFormState extends State<EventForm> {
 
               Row(
                 children: [
-                  Expanded(child: _buildCategory()),
+                  Expanded(child: buildCategory()),
                 ],
               ),
               // DATA
               Row(
                 children: [
-                  Expanded(child: _buildDatetime()),
+                  Expanded(child: buildDatetime()),
                 ],
               ),
               Row(
                 children: [
-                  Expanded(child: _buildText()),
+                  Expanded(child: buildText()),
                 ],
               ),
               Row(
                 children: [
-                  Expanded(child: _buildAmount()),
+                  Expanded(child: buildAmount()),
                 ],
               ),
               const SizedBox(
@@ -252,7 +249,7 @@ class _EventFormState extends State<EventForm> {
 
                         Event newEvent = Event(
                             idHome: 0,
-                            idNature: _inSwitch ? Nature.IN : Nature.OUT,
+                            idNature: _inSwitch ? Nature.inId : Nature.outId,
                             idCategory: _idCategory!,
                             date: _date!,
                             text: _text,

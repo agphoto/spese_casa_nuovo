@@ -1,4 +1,4 @@
-import 'package:cool_alert/cool_alert.dart';
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:spese_casa_nuovo/components/category_list.dart';
 import 'package:spese_casa_nuovo/dao/category_dao.dart';
@@ -10,12 +10,12 @@ import 'package:spese_casa_nuovo/screens/dbrestore.dart';
 
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+  const SettingsScreen({super.key});
 
   static String route = "/settings_screen";
 
   @override
-  _SettingsScreenState createState() => _SettingsScreenState();
+  State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
@@ -25,21 +25,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    int _selectedNavigationItemIndex = 4;
+    int selectedNavigationItemIndex = 4;
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           // ignore: prefer_const_literals_to_create_immutables
           children: [
             Text("Quanto spendo?"),
             SizedBox(height: 8.0),
-            // Text('Via Sebastiano Ziani, 7',
-            //     style: Theme.of(context).textTheme.appBarSubTitle),
-            // Text('00136 - Roma',
-            //     style: Theme.of(context).textTheme.appBarSubTitle)
           ],
         ),
         leading: Image.asset(
@@ -50,9 +44,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: CategoryList(callBack),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedNavigationItemIndex,
+        currentIndex: selectedNavigationItemIndex,
         onTap: (value) {
-          _selectedNavigationItemIndex = value;
+          selectedNavigationItemIndex = value;
           switch (value) {
             case 0:
               Navigator.pushReplacementNamed(context, MyHomePage.route);
@@ -65,21 +59,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
               break;
             case 3:
               // new DB
-
-              CoolAlert.show(
+              AwesomeDialog(
                 context: context,
-                type: CoolAlertType.confirm,
-                text: 'Do you want to create a new DB',
-                confirmBtnText: 'Yes',
-                cancelBtnText: 'No',
-                confirmBtnColor: Colors.green,
-                onConfirmBtnTap: () async {
+                dialogType: DialogType.question,
+                title: 'New DB',
+                desc: 'Do you want to create a new DB?',
+                btnOkText: 'Yes',
+                btnCancelText: 'No',
+                btnOkColor: Colors.green,
+                btnOkOnPress: () async {
                   await AppDatabase.instance.deleteDb();
+                  if (!context.mounted) return;
                   Navigator.pushReplacementNamed(context, MyHomePage.route);
                 },
-                onCancelBtnTap: () {},
-              );
-              print("CaSE 3");
+                btnCancelOnPress: () {},
+              ).show();
+              debugPrint("CaSE 3");
               break;
             case 4:
               break;
@@ -143,14 +138,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 // ---------------------
 
 class CategoryForm extends StatefulWidget {
-  Category? selectedCategory;
-  Function callback;
-  CategoryForm({Category? category, required Function pCallback, super.key})
+  final Category? selectedCategory;
+  final Function callback;
+  const CategoryForm({Category? category, required Function pCallback, super.key})
       : selectedCategory = category,
-        callback = pCallback ;
+        callback = pCallback;
 
   @override
-  _CategoryFormState createState() => _CategoryFormState();
+  State<CategoryForm> createState() => _CategoryFormState();
 }
 
 class _CategoryFormState extends State<CategoryForm> {
@@ -169,7 +164,7 @@ class _CategoryFormState extends State<CategoryForm> {
     item = widget.selectedCategory ?? Category(idNature: 0, label: "");
     // newCategoryLabel = item?.label;
     labelController = TextEditingController(text: item.label);
-    isIn = item.idNature == Nature.IN;
+    isIn = item.idNature == Nature.inId;
   }
 
   @override
@@ -216,7 +211,7 @@ class _CategoryFormState extends State<CategoryForm> {
                           onPressed: () {
                             setState(() {
                               isIn = true;
-                              item.idNature = Nature.IN;
+                              item.idNature = Nature.inId;
                             });
                           },
                           style: ElevatedButton.styleFrom(
@@ -224,12 +219,6 @@ class _CategoryFormState extends State<CategoryForm> {
                               borderRadius: BorderRadius.circular(10.0),
                             ),
                             padding: const EdgeInsets.all(10),
-                            /*
-                            primary: isIn
-                                ? Colors.yellow.shade600
-                                : Colors.grey.shade500,
-                            onPrimary: Colors.grey.shade500,
-                            */
                           ),
                           child: Image.asset('assets/images/add.png'),
                         ),
@@ -237,7 +226,7 @@ class _CategoryFormState extends State<CategoryForm> {
                           onPressed: () {
                             setState(() {
                               isIn = false;
-                              item.idNature = Nature.OUT;
+                              item.idNature = Nature.outId;
                             });
                           },
                           style: ElevatedButton.styleFrom(
@@ -245,12 +234,6 @@ class _CategoryFormState extends State<CategoryForm> {
                               borderRadius: BorderRadius.circular(10.0),
                             ),
                             padding: const EdgeInsets.all(10),
-                            /*
-                            primary: !isIn
-                                ? Colors.yellow.shade600
-                                : Colors.grey.shade500,
-                            onPrimary: Colors.black,
-                            */
                           ),
                           child: Image.asset('assets/images/minus32.png'),
                         ),
@@ -263,28 +246,19 @@ class _CategoryFormState extends State<CategoryForm> {
               ],
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 // Validate returns true if the form is valid, or false otherwise.
                 if (_formKey.currentState!.validate()) {
-                  // Category newCategory = Category(
-                  //     idNature: isIn ? Nature.IN : Nature.OUT,
-                  //     label: item.label);
-
                   if (isUpdate) {
-                    CategoryDao().update(item).then((value) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Processing Data')),
-                      );
-                      widget.callback();
-                    });
+                    await CategoryDao().update(item);
                   } else {
-                    CategoryDao().insert(item).then((value) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Processing Data')),
-                      );
-                      widget.callback();
-                    });
+                    await CategoryDao().insert(item);
                   }
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Processing Data')),
+                  );
+                  widget.callback();
                   Navigator.pop(context);
                 }
               },

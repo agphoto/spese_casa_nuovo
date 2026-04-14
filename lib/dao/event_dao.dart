@@ -4,9 +4,9 @@ import 'package:sembast/sembast.dart';
 import 'package:sembast/timestamp.dart';
 
 class EventDao {
-  static const String EVENT_STORE_NAME = "events";
+  static const String eventStoreName = "events";
 
-  final _eventStore = intMapStoreFactory.store(EVENT_STORE_NAME);
+  final _eventStore = intMapStoreFactory.store(eventStoreName);
 
   Future<Database> get _db async => await AppDatabase.instance.database;
 
@@ -70,13 +70,13 @@ List<Filter> getFilterList(EventFilter f) {
 
   if (f.filterIn && f.filterOut) {
     l.add(Filter.or([
-      Filter.equals('idNature', Nature.IN),
-      Filter.equals('idNature', Nature.OUT)
+      Filter.equals('idNature', Nature.inId),
+      Filter.equals('idNature', Nature.outId)
     ]));
   } else if (f.filterIn) {
-    l.add(Filter.equals('idNature', Nature.IN));
+    l.add(Filter.equals('idNature', Nature.inId));
   } else if (f.filterOut) {
-    l.add(Filter.equals('idNature', Nature.OUT));
+    l.add(Filter.equals('idNature', Nature.outId));
   }
   if (f.filterCatagories != null) {
     for (var item in f.filterCatagories!) {
