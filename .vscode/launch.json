@@ -1,0 +1,47 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    //
+    // L'endpoint del backend è iniettato a compile-time via
+    // --dart-define=BACKEND_ENDPOINT=... e letto in lib/config/app_config.dart.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "spese_casa_nuovo",
+            "request": "launch",
+            "type": "dart",
+            "toolArgs": [
+                "--dart-define=BACKEND_ENDPOINT=http://api.alessiogiuliano.it/quantospendo"
+            ]
+        },
+        {
+            "name": "spese_casa_nuovo (backend locale)",
+            "request": "launch",
+            "type": "dart",
+            // 10.0.2.2 = host della macchina visto dall'emulatore Android.
+            // Su iOS simulator / desktop / web usare http://localhost:8000/...
+            "toolArgs": [
+                "--dart-define=BACKEND_ENDPOINT=http://10.0.2.2:8000/quantospendo"
+            ]
+        },
+        {
+            "name": "spese_casa_nuovo (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile",
+            "toolArgs": [
+                "--dart-define=BACKEND_ENDPOINT=http://api.alessiogiuliano.it/quantospendo"
+            ]
+        },
+        {
+            "name": "spese_casa_nuovo (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+            "toolArgs": [
+                "--dart-define=BACKEND_ENDPOINT=http://api.alessiogiuliano.it/quantospendo"
+            ]
+        }
+    ]
+}
