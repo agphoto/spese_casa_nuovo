@@ -29,7 +29,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     FlutterUdid.udid.then((value) => {
-          debugPrint("udid:$value"),
           if (!GetIt.I.isRegistered<AppSettings>())
             GetIt.I.registerSingleton<AppSettings>(AppSettings(udid: value))
         });
@@ -47,13 +46,13 @@ class MyApp extends StatelessWidget {
           backgroundColor: Colors.red,
           centerTitle: true,
           elevation: 0,
-          toolbarHeight: 150.0,
+          toolbarHeight: 110.0,
           iconTheme: IconThemeData(
-            color: Colors.purple,
+            color: Colors.white,
             size: 16,
           ),
           actionsIconTheme: IconThemeData(
-            color: Colors.purple,
+            color: Colors.white,
             size: 16,
           ),
         ),
@@ -136,6 +135,56 @@ class _MyHomePageState extends State<MyHomePage> {
   int _selectedNavigationItemIndex = 0;
   EventFilter _filter = EventFilter();
   List<Category> categories = [];
+  int _quickRange = 0; // 0 = tutto, 1 = questo mese, 2 = ultimi 30 giorni
+
+  void _applyQuickRange(int range) {
+    final now = DateTime.now();
+    DateTime? from;
+    DateTime? to;
+    if (range == 1) {
+      // Intero mese di calendario: dal 1° al suo ultimo istante.
+      from = DateTime(now.year, now.month, 1);
+      to = DateTime(now.year, now.month + 1, 1)
+          .subtract(const Duration(milliseconds: 1));
+    } else if (range == 2) {
+      // Ultimi 15 giorni, includendo tutti gli eventi di oggi (fino a fine
+      // giornata) a prescindere dall'orario in cui si applica il filtro.
+      from = DateTime(now.year, now.month, now.day)
+          .subtract(const Duration(days: 15));
+      to = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+    }
+    setState(() {
+      _quickRange = range;
+      _filter = EventFilter(filterDateFrom: from, filterDateTo: to);
+    });
+  }
+
+  Widget _buildQuickFilters() {
+    Widget chip(String label, int range) => Padding(
+          padding: const EdgeInsets.only(right: 6.0),
+          child: ChoiceChip(
+            label: Text(label, style: const TextStyle(fontSize: 12.0)),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 2.0),
+            padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            selected: _quickRange == range,
+            onSelected: (_) => _applyQuickRange(range),
+          ),
+        );
+    return SizedBox(
+      height: 44.0,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 6.0),
+        children: [
+          chip('Tutto', 0),
+          chip('Questo mese', 1),
+          chip('Ultimi 15 giorni', 2),
+        ],
+      ),
+    );
+  }
 
   Future getUser() async {
     User? value = await UserDao().userById(1);
@@ -204,7 +253,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 fontWeight: FontWeight.bold,
               ),
               descTextStyle: TextStyle(
-                color: Colors.blue[500],
+                color: Colors.grey[200],
                 fontSize: 14,
               ),
               btnOkOnPress: () {},
@@ -232,6 +281,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 color: Colors.black,
                 onPressed: () {
                   setState(() {
+                    _quickRange = 0;
                     _filter = EventFilter(filterIn: true, filterOut: false);
                   });
                 },
@@ -254,6 +304,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 color: Colors.black,
                 onPressed: () {
                   setState(() {
+                    _quickRange = 0;
                     _filter = EventFilter(filterIn: false, filterOut: true);
                   });
                 },
@@ -276,6 +327,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 color: Colors.black,
                 onPressed: () {
                   setState(() {
+                    _quickRange = 0;
                     _filter = EventFilter(filterIn: true, filterOut: true);
                   });
                 },
@@ -291,6 +343,7 @@ class _MyHomePageState extends State<MyHomePage> {
           switch (value) {
             case 0:
               setState(() {
+                _quickRange = 0;
                 _filter = EventFilter();
               });
               break;
@@ -310,7 +363,12 @@ class _MyHomePageState extends State<MyHomePage> {
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Setting'),
         ],
       ),
-      body: EventsList(_filter, categories),
+      body: Column(
+        children: [
+          _buildQuickFilters(),
+          Expanded(child: EventsList(_filter, categories)),
+        ],
+      ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -355,6 +413,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ).then((value) {
                 if (value != null) {
                   setState(() {
+                    _quickRange = 0;
                     _filter = value;
                   });
                 }
@@ -396,8 +455,8 @@ class _MyHomePageState extends State<MyHomePage> {
                         topRight: Radius.circular(20.0),
                       ),
                     ),
-                    child: Center(
-                      child: EventForm(categories: categories),
+                    child: const Center(
+                      child: EventForm(),
                     ),
                   ),
                 ),

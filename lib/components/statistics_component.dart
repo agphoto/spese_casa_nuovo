@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:spese_casa_nuovo/dao/category_dao.dart';
 import 'package:spese_casa_nuovo/dao/event_dao.dart';
 import 'package:spese_casa_nuovo/models/all_models.dart';
+import 'package:spese_casa_nuovo/utils/format.dart';
 import 'package:intl/intl.dart';
 import 'package:pie_chart/pie_chart.dart';
 import 'package:community_charts_flutter/community_charts_flutter.dart' as charts;
@@ -57,6 +58,116 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
     return dataMap;
   }
 
+  /// Aggrega gli eventi per giorno sommando gli importi, ordinati per data.
+  /// Rende le due linee (entrate/uscite) un trend leggibile invece di un punto
+  /// per ogni singola transazione.
+  List<TimeSeriesSales> _dailySeries(List<Event> events) {
+    final Map<DateTime, double> byDay = {};
+    for (final e in events) {
+      final day = DateTime(e.date.year, e.date.month, e.date.day);
+      byDay[day] = (byDay[day] ?? 0) + e.amount;
+    }
+    final entries = byDay.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    return entries.map((e) => TimeSeriesSales(e.key, e.value)).toList();
+  }
+
+  /// Costruisce un grafico lineare indipendente per una singola serie,
+  /// con asse e scala propri: così entrate e uscite restano separate e non
+  /// condividono la stessa scala verticale.
+  Widget _lineChart(String title, List<TimeSeriesSales> data,
+      charts.Color color, Color totalColor) {
+    final axisCurrency = NumberFormat.decimalPattern('it_IT');
+    // Totale della serie, calcolato in modo sicuro anche con lista vuota.
+    final double total = data.fold<double>(0.0, (s, e) => s + e.sales);
+    final series = charts.Series<TimeSeriesSales, DateTime>(
+      id: title,
+      colorFn: (_, __) => color,
+      domainFn: (TimeSeriesSales s, _) => s.time,
+      measureFn: (TimeSeriesSales s, _) => s.sales,
+      displayName: title,
+      data: data,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 4.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14.0)),
+              Text(
+                formatCurrency(total),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14.0,
+                    color: totalColor),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 240,
+          child: data.isEmpty
+              ? const Center(child: Text('Nessun dato'))
+              : charts.TimeSeriesChart(
+                  [series],
+                  primaryMeasureAxis: charts.NumericAxisSpec(
+                    tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
+                        (value) => value == null
+                            ? ''
+                            : '€ ${axisCurrency.format(value)}'),
+                    renderSpec: const charts.GridlineRendererSpec(
+                      labelStyle: charts.TextStyleSpec(
+                          fontSize: 12, color: charts.MaterialPalette.white),
+                      lineStyle: charts.LineStyleSpec(
+                          color: charts.Color(r: 90, g: 90, b: 90)),
+                    ),
+                  ),
+                  selectionModels: [
+                    charts.SelectionModelConfig(
+                      type: charts.SelectionModelType.info,
+                      changedListener: _onSelectionChanged,
+                    )
+                  ],
+                  defaultRenderer: charts.LineRendererConfig(
+                    includeArea: true,
+                    areaOpacity: 0.12,
+                    includePoints: true,
+                    includeLine: true,
+                    radiusPx: 5.0,
+                    strokeWidthPx: 2.5,
+                  ),
+                  // Margine sul dominio così i punti agli estremi (es. con sole
+                  // due date) non finiscono incollati ai bordi e restano ben
+                  // visibili.
+                  domainAxis: charts.DateTimeAxisSpec(
+                    viewport: data.length < 2
+                        ? null
+                        : charts.DateTimeExtents(
+                            start: data.first.time
+                                .subtract(const Duration(hours: 12)),
+                            end: data.last.time.add(const Duration(hours: 12)),
+                          ),
+                    renderSpec: const charts.SmallTickRendererSpec(
+                      axisLineStyle: charts.LineStyleSpec(
+                        color: charts.Color(r: 255, g: 255, b: 255),
+                      ),
+                      labelStyle: charts.TextStyleSpec(
+                        color: charts.Color(r: 255, g: 255, b: 255),
+                      ),
+                    ),
+                  ),
+                  animate: true,
+                ),
+        ),
+      ],
+    );
+  }
+
   double get outTotal {
     double val =
         eOut.map((e) => e.amount).reduce((value, element) => value + element);
@@ -77,18 +188,43 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
     super.initState();
   }
 
-  List<Text> getSelectedDatum(charts.SelectionModel model) {
-    if (model.hasDatumSelection) {
-      return model.selectedDatum
-          .map((element) =>
-              "${DateFormat(DateFormat.YEAR_ABBR_MONTH_DAY)
-                  .format(element.datum.time)} : ${element.datum.sales}€")
-          .toList()
-          .map((e) => Text(e.toString()))
-          .toList();
-    } else {
+  List<Widget> getSelectedDatum(charts.SelectionModel model) {
+    if (!model.hasDatumSelection) {
       return [const Text('Nessun dato.')];
     }
+
+    final List<Widget> rows = [];
+    for (final element in model.selectedDatum) {
+      final TimeSeriesSales datum = element.datum;
+      // La serie selezionata ('IN'/'OUT') dice dove cercare i movimenti.
+      final List<Event> source = element.series.id == 'IN' ? eIn : eOut;
+      final day = DateTime(datum.time.year, datum.time.month, datum.time.day);
+      final dayEvents = source
+          .where((e) =>
+              e.date.year == day.year &&
+              e.date.month == day.month &&
+              e.date.day == day.day)
+          .toList();
+
+      // Intestazione: data e totale del giorno.
+      rows.add(Padding(
+        padding: const EdgeInsets.only(top: 6.0, bottom: 4.0),
+        child: Text(
+          '${DateFormat('dd/MM/yyyy').format(day)} — ${formatCurrency(datum.sales)}',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ));
+
+      // Dettaglio dei singoli movimenti: testo, categoria e importo.
+      for (final e in dayEvents) {
+        final categoryLabel = c
+            .firstWhere((x) => x.id == e.idCategory,
+                orElse: () => Category(idNature: e.idNature, label: '—'))
+            .label;
+        rows.add(Text('• ${e.text}  [$categoryLabel] : ${formatCurrency(e.amount)}'));
+      }
+    }
+    return rows;
   }
 
   Future<void> _onSelectionChanged(charts.SelectionModel model) async {
@@ -124,31 +260,10 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
     Map<String, double> inDataMap = buildInDataMap();
     Map<String, double> outDataMap = buildOutDataMap();
 
-    // Linear charts
-
-    List<TimeSeriesSales> linearValues =
-        eOut.map((e) => TimeSeriesSales(e.date, e.amount)).toList();
-    charts.Series<TimeSeriesSales, DateTime> linearPoints =
-        charts.Series<TimeSeriesSales, DateTime>(
-      id: 'OUT',
-      colorFn: (_, __) => charts.MaterialPalette.red.shadeDefault,
-      domainFn: (TimeSeriesSales sales, _) => sales.time,
-      measureFn: (TimeSeriesSales sales, _) => sales.sales,
-      displayName: "OUT",
-      data: linearValues,
-    );
-
-    List<TimeSeriesSales> linearValuesIn =
-        eIn.map((e) => TimeSeriesSales(e.date, e.amount)).toList();
-    charts.Series<TimeSeriesSales, DateTime> linearPointsIn =
-        charts.Series<TimeSeriesSales, DateTime>(
-      id: 'IN',
-      colorFn: (_, __) => charts.MaterialPalette.green.shadeDefault,
-      domainFn: (TimeSeriesSales sales, _) => sales.time,
-      measureFn: (TimeSeriesSales sales, _) => sales.sales,
-      data: linearValuesIn,
-      displayName: "IN",
-    );
+    // Grafici lineari indipendenti: totali giornalieri di entrate e uscite,
+    // ciascuno con il proprio asse e la propria scala.
+    final List<TimeSeriesSales> outDaily = _dailySeries(eOut);
+    final List<TimeSeriesSales> inDaily = _dailySeries(eIn);
 
     return SingleChildScrollView(
       child: Container(
@@ -167,7 +282,7 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
                     initialAngleInDegree: 0,
                     chartType: ChartType.ring,
                     ringStrokeWidth: 22,
-                    centerText: "IN: $inTotal €",
+                    centerText: "IN: ${formatCurrency(inTotal)}",
                     legendOptions: const LegendOptions(
                       showLegendsInRow: true,
                       legendPosition: LegendPosition.bottom,
@@ -201,7 +316,7 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
                     initialAngleInDegree: 0,
                     chartType: ChartType.ring,
                     ringStrokeWidth: 22,
-                    centerText: "OUT: $outTotal €",
+                    centerText: "OUT: ${formatCurrency(outTotal)}",
                     legendOptions: const LegendOptions(
                       showLegendsInRow: true,
                       legendPosition: LegendPosition.bottom,
@@ -224,47 +339,19 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
             const SizedBox(
               height: 30,
             ),
-            SizedBox(
-              height: 400,
-              child: charts.TimeSeriesChart([linearPoints, linearPointsIn],
-                      domainAxis: const charts.DateTimeAxisSpec(
-                        renderSpec: charts.SmallTickRendererSpec(
-                          axisLineStyle: charts.LineStyleSpec(
-                            color: charts.Color(b: 255, g: 255, r: 255),
-                          ),
-                          labelStyle: charts.TextStyleSpec(
-                            color: charts.Color(b: 255, g: 255, r: 255),
-                          ),
-                        ),
-                      ),
-                      primaryMeasureAxis: charts.NumericAxisSpec(
-                          tickFormatterSpec:
-                              charts.BasicNumericTickFormatterSpec(
-                                  (value) => '$value€'),
-                          renderSpec: const charts.GridlineRendererSpec(
-
-                              // Tick and Label styling here.
-                              labelStyle: charts.TextStyleSpec(
-                                  fontSize: 12, // size in Pts.
-                                  color: charts.MaterialPalette.white),
-
-                              // Change the line colors to match text color.
-                              lineStyle: charts.LineStyleSpec(
-                                  color: charts.MaterialPalette.white))),
-                      selectionModels: [
-                        charts.SelectionModelConfig(
-                          type: charts.SelectionModelType.info,
-                          changedListener: _onSelectionChanged,
-                        )
-                      ],
-                      defaultRenderer: charts.LineRendererConfig(
-                        includeArea: false,
-                        stacked: false,
-                        includePoints: true,
-                        includeLine: true,
-                      ),
-                      animate: true),
-            )
+            _lineChart(
+              'Entrate',
+              inDaily,
+              charts.MaterialPalette.green.shadeDefault,
+              Colors.green,
+            ),
+            const SizedBox(height: 30),
+            _lineChart(
+              'Uscite',
+              outDaily,
+              charts.MaterialPalette.red.shadeDefault,
+              Colors.red,
+            ),
           ],
         ),
       ),

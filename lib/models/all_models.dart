@@ -113,7 +113,9 @@ class Event {
       idCategory: json['idCategory'],
       date: json['date'],
       text: json['text'],
-      amount: json['amount'],
+      // Coercizione num->double: i backup possono contenere importi interi
+      // (es. 100) che altrimenti farebbero crashare l'assegnazione a double.
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
     );
   }
 

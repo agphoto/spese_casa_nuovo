@@ -4,6 +4,7 @@ import 'package:spese_casa_nuovo/constants/all_constants.dart';
 import 'package:spese_casa_nuovo/dao/event_dao.dart';
 import 'package:spese_casa_nuovo/extensions/custom_scheme.dart';
 import 'package:spese_casa_nuovo/models/all_models.dart';
+import 'package:spese_casa_nuovo/utils/format.dart';
 import 'package:intl/intl.dart';
 
 class EventsList extends StatefulWidget {
@@ -16,6 +17,9 @@ class EventsList extends StatefulWidget {
 }
 
 class _EventsListState extends State<EventsList> {
+  String _searchQuery = "";
+  bool _hideTotal = true;
+
   Future<List<Event>> getList() => EventDao().allByHome(0, widget._filter);
 
   @override
@@ -25,6 +29,16 @@ class _EventsListState extends State<EventsList> {
 
   void callback() {
     setState(() {});
+  }
+
+  /// Cerca la categoria dell'evento senza lanciare eccezioni se mancante
+  /// (es. categoria eliminata): in tal caso ritorna un segnaposto.
+  Category categoryFor(Event item) {
+    return widget.categories.firstWhere(
+      (element) => element.id == item.idCategory,
+      orElse: () =>
+          Category(id: item.idCategory, idNature: item.idNature, label: '—'),
+    );
   }
 
   bool matchFilter(Event item) {
@@ -41,89 +55,172 @@ class _EventsListState extends State<EventsList> {
     return value;
   }
 
+  Widget _totalHeader(double totale) {
+    final bool positive = totale >= 0;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(8.0, 4.0, 8.0, 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(8.0),
+        border: Border.all(
+          color: positive ? Colors.green : Colors.red,
+          width: 1.0,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text('Totale', style: TextStyle(fontWeight: FontWeight.bold)),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _hideTotal ? '••••••' : formatCurrency(totale),
+                style: TextStyle(
+                  fontSize: 18.0,
+                  fontWeight: FontWeight.bold,
+                  color: _hideTotal
+                      ? Colors.grey
+                      : (positive ? Colors.green : Colors.red),
+                ),
+              ),
+              const SizedBox(width: 8.0),
+              InkWell(
+                onTap: () => setState(() => _hideTotal = !_hideTotal),
+                customBorder: const CircleBorder(),
+                child: Padding(
+                  padding: const EdgeInsets.all(2.0),
+                  child: Icon(
+                    _hideTotal ? Icons.visibility_off : Icons.visibility,
+                    size: 20.0,
+                    color: Colors.grey[400],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _searchField() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0.0),
+      child: TextField(
+        onChanged: (value) => setState(() => _searchQuery = value),
+        decoration: const InputDecoration(
+          isDense: true,
+          prefixIcon: Icon(Icons.search),
+          hintText: 'Cerca per descrizione',
+          border: OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyState(String message) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(12.0),
+        width: 240.0,
+        decoration: BoxDecoration(
+            color: Colors.yellow.shade700,
+            borderRadius: BorderRadius.circular(20.0),
+            boxShadow: const [
+              BoxShadow(
+                  color: Colors.grey,
+                  blurRadius: 1.0,
+                  spreadRadius: 1.0,
+                  offset: Offset(0.0, 0.0))
+            ]),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.receipt_long, color: Colors.black, size: 32.0),
+            const SizedBox(height: 8.0),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.black),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Event>>(
-      future: getList(),
-      initialData: kEventsList,
-      builder: (
-        context,
-        AsyncSnapshot<List<Event>> snapshot,
-      ) {
-        // double totale = 0.0;
-        switch (snapshot.connectionState) {
-          case ConnectionState.done:
-            if (snapshot.hasData && (snapshot.data as List).isNotEmpty) {
-              List<Event> events = snapshot.data!;
-              double totale = 0.0;
-              for (var item in events) {
-                totale = totale +
-                    (item.amount * (item.idNature == Nature.inId ? 1 : -1));
-              }
-              return ListView.builder(
-                itemCount: events.length + 1,
-                itemBuilder: (context, index) {
-                  if (index > events.length - 1) {
+    return Column(
+      children: [
+        _searchField(),
+        Expanded(
+          child: FutureBuilder<List<Event>>(
+            future: getList(),
+            initialData: kEventsList,
+            builder: (
+              context,
+              AsyncSnapshot<List<Event>> snapshot,
+            ) {
+              switch (snapshot.connectionState) {
+                case ConnectionState.done:
+                  if (snapshot.hasData && (snapshot.data as List).isNotEmpty) {
+                    final query = _searchQuery.trim().toLowerCase();
+                    final List<Event> events = query.isEmpty
+                        ? snapshot.data!
+                        : snapshot.data!
+                            .where((e) => e.text.toLowerCase().contains(query))
+                            .toList();
+
+                    double totale = 0.0;
+                    for (var item in events) {
+                      totale = totale +
+                          (item.amount *
+                              (item.idNature == Nature.inId ? 1 : -1));
+                    }
+
                     return Column(
                       children: [
-                        Container(
-                            margin: const EdgeInsets.only(top: 16.0),
-                            child: Text('Totale: $totale €')),
-                        const SizedBox(
-                          height: 150,
+                        _totalHeader(totale),
+                        Expanded(
+                          child: RefreshIndicator(
+                            onRefresh: () async => setState(() {}),
+                            child: events.isEmpty
+                                ? ListView(
+                                    children: [
+                                      const SizedBox(height: 80),
+                                      _emptyState(
+                                          'Nessun risultato per "$_searchQuery".'),
+                                    ],
+                                  )
+                                : ListView.builder(
+                                    padding:
+                                        const EdgeInsets.only(bottom: 150.0),
+                                    itemCount: events.length,
+                                    itemBuilder: (context, index) {
+                                      final item = events[index];
+                                      return EventItem(
+                                          item, categoryFor(item), callback);
+                                    },
+                                  ),
+                          ),
                         ),
                       ],
                     );
                   } else {
-                    final item = events[index];
-                    // totale = totale +   (item.amount * (item.idNature == Nature.IN ? 1 : -1));
-                    Category c = widget.categories
-                        .firstWhere((element) => element.id == item.idCategory);
-                    return EventItem(item, c, callback);
+                    return _emptyState(
+                        'Lista vuota!\nDefinire le categorie prima di inserire nuovi eventi.');
                   }
-                },
-              );
-            } else {
-              return Center(
-                child: Container(
-                  padding: const EdgeInsets.all(8.0),
-                  height: 150.0,
-                  width: 220.0,
-                  decoration: BoxDecoration(
-                      color: Colors.yellow.shade700,
-                      border: Border.all(
-                        color: Colors.yellow.shade700,
-                        width: 2.0,
-                      ),
-                      borderRadius: BorderRadius.circular(20.0),
-                      boxShadow: const [
-                        BoxShadow(
-                            color: Colors.grey,
-                            blurRadius: 1.0,
-                            spreadRadius: 1.0,
-                            offset: Offset(0.0, 0.0))
-                      ]),
-                  child: Center(
-                      child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Lista vuota!',
-                        style: TextStyle(color: Colors.black),
-                      ),
-                      Text(
-                          'Definire le categorie prima di inserire nuovi eventi.',
-                          style: TextStyle(color: Colors.grey.shade900)),
-                    ],
-                  )),
-                ),
-              );
-            }
-          default:
-            return const Center(child: CircularProgressIndicator());
-        }
-      },
+                default:
+                  return const Center(child: CircularProgressIndicator());
+              }
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -140,7 +237,7 @@ class EventItem extends StatelessWidget {
   const EventItem(this._event, this._category, this.callback, {super.key})
       ;
 
-  void longPress(BuildContext context, List<Category> categories) {
+  void longPress(BuildContext context) {
     showModalBottomSheet(
       context: context,
       elevation: 0,
@@ -164,7 +261,7 @@ class EventItem extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: EventForm(categories: categories, event: _event),
+          child: EventForm(event: _event),
         ),
       ),
     ).then((value) => callback());
@@ -174,7 +271,7 @@ class EventItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onLongPress: () {
-        longPress(context, [_category]);
+        longPress(context);
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
@@ -226,7 +323,7 @@ class EventItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '€ ${_event.amount}',
+                  formatCurrency(_event.amount),
                   style: Theme.of(context).textTheme.amountText,
                 ),
                 Container(

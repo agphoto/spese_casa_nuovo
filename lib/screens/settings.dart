@@ -204,40 +204,26 @@ class _CategoryFormState extends State<CategoryForm> {
                     const SizedBox(
                       height: 16.0,
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              isIn = true;
-                              item.idNature = Nature.inId;
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            padding: const EdgeInsets.all(10),
-                          ),
-                          child: Image.asset('assets/images/add.png'),
+                    SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment<bool>(
+                          value: true,
+                          label: Text('Entrata'),
+                          icon: Icon(Icons.add),
                         ),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              isIn = false;
-                              item.idNature = Nature.outId;
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            padding: const EdgeInsets.all(10),
-                          ),
-                          child: Image.asset('assets/images/minus32.png'),
+                        ButtonSegment<bool>(
+                          value: false,
+                          label: Text('Uscita'),
+                          icon: Icon(Icons.remove),
                         ),
                       ],
+                      selected: {isIn},
+                      onSelectionChanged: (selection) {
+                        setState(() {
+                          isIn = selection.first;
+                          item.idNature = isIn ? Nature.inId : Nature.outId;
+                        });
+                      },
                     ),
 
                     // Add TextFormFields and ElevatedButton here.

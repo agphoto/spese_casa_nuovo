@@ -1,15 +1,15 @@
-import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
 import 'package:flutter/material.dart';
+import 'package:spese_casa_nuovo/components/date_picker_field.dart';
 import 'package:spese_casa_nuovo/dao/category_dao.dart';
 import 'package:spese_casa_nuovo/dao/event_dao.dart';
 import 'package:spese_casa_nuovo/extensions/custom_scheme.dart';
 import 'package:spese_casa_nuovo/models/all_models.dart';
-import 'package:intl/intl.dart';
+import 'package:spese_casa_nuovo/utils/format.dart';
+import 'package:spese_casa_nuovo/utils/dialogs.dart';
 
 class EventForm extends StatefulWidget {
-  final List<Category> categories;
   final Event? event;
-  const EventForm({required this.categories, this.event, super.key});
+  const EventForm({this.event, super.key});
 
   @override
   State<EventForm> createState() => _EventFormState();
@@ -33,6 +33,7 @@ class _EventFormState extends State<EventForm> {
     if (widget.event != null) {
       _inSwitch = widget.event!.isInEvent;
       _outSwitch = !_inSwitch;
+      _date = widget.event!.date;
     }
     getFilteredCategory();
   }
@@ -52,43 +53,18 @@ class _EventFormState extends State<EventForm> {
   @override
   Widget build(BuildContext context) {
     Widget buildDatetime() {
-      final format = DateFormat("dd/MM/yyyy");
-      return DateTimeField(
-        format: format,
+      return DatePickerField(
         initialValue: widget.event?.date,
+        labelText: 'Data',
         onChanged: (value) => _date = value,
-        decoration: InputDecoration(
-          labelText: 'Data',
-          labelStyle: Theme.of(context).textTheme.bodyLarge,
-        ),
-        onShowPicker: (context, currentValue) async {
-          final date = await showDatePicker(
-              context: context,
-              firstDate: DateTime(1900),
-              initialDate: currentValue ?? DateTime.now(),
-              lastDate: DateTime(2100));
-          if (date != null) {
-            if (!context.mounted) return currentValue;
-            final time = await showTimePicker(
-              context: context,
-              initialTime:
-                  TimeOfDay.fromDateTime(currentValue ?? DateTime.now()),
-            );
-            return DateTimeField.combine(date, time);
-          } else {
-            return currentValue;
-          }
-        },
         autovalidateMode: autoValidateMode,
         validator: (date) => (date == null) ? 'Campo richiesto' : null,
-        onSaved: (dt) {
-          setState(() => _date = dt);
-        },
       );
     }
 
     Widget buildCategory() {
       return DropdownButtonFormField<int>(
+        key: ValueKey(_inSwitch),
         decoration: InputDecoration(
           labelText: 'Categoria',
           isDense: true,
@@ -147,16 +123,22 @@ class _EventFormState extends State<EventForm> {
         style: Theme.of(context).textTheme.bodyLarge,
         decoration: const InputDecoration(labelText: 'Euro', isDense: true),
         maxLength: 50,
-        keyboardType: TextInputType.number,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         validator: (String? value) {
-          if (value != null && value.isEmpty) {
+          if (value == null || value.trim().isEmpty) {
             return 'Campo richiesto';
           }
-
+          final parsed = parseAmount(value);
+          if (parsed == null) {
+            return 'Importo non valido';
+          }
+          if (parsed <= 0) {
+            return 'L\'importo deve essere maggiore di zero';
+          }
           return null;
         },
         onSaved: (String? value) {
-          _amount = double.tryParse(value ?? "0.0")!;
+          _amount = parseAmount(value) ?? 0.0;
         },
       );
     }
@@ -171,49 +153,32 @@ class _EventFormState extends State<EventForm> {
           curve: Curves.decelerate,
           child: Column(
             children: [
-              // ENTRATA
+              // ENTRATA / USCITA
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: (widget.event == null)
-                    ? [
-                        const Text('Entrata'),
-                        Switch(
-                          value: widget.event?.isInEvent ?? _inSwitch,
-                          onChanged: (value) {
-                            setState(() {
-                              if (widget.event != null) {
-                                widget.event!.idNature =
-                                    value ? Nature.inId : Nature.outId;
-                              }
-                              _inSwitch = value;
-                              _outSwitch = !value;
-                              getFilteredCategory();
-                            });
-                          },
-                          activeTrackColor: Colors.lightGreenAccent,
-                          activeThumbColor: Colors.green,
-                        ),
-                        const Text('Uscita'),
-                        Switch(
-                          value: widget.event?.isOutEvent ?? _outSwitch,
-                          onChanged: (value) {
-                            setState(() {
-                              if (widget.event != null) {
-                                widget.event!.idNature =
-                                    value ? Nature.outId : Nature.inId;
-                              }
-                              _outSwitch = value;
-                              _inSwitch = !value;
-                              getFilteredCategory();
-                            });
-                          },
-                          activeTrackColor: Colors.lightGreenAccent,
-                          activeThumbColor: Colors.green,
-                        ),
-                      ]
-                    : [],
-              ),
+              if (widget.event == null)
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment<bool>(
+                      value: true,
+                      label: Text('Entrata'),
+                      icon: Icon(Icons.add),
+                    ),
+                    ButtonSegment<bool>(
+                      value: false,
+                      label: Text('Uscita'),
+                      icon: Icon(Icons.remove),
+                    ),
+                  ],
+                  selected: {_inSwitch},
+                  onSelectionChanged: (selection) {
+                    setState(() {
+                      _inSwitch = selection.first;
+                      _outSwitch = !_inSwitch;
+                      _idCategory = null;
+                      getFilteredCategory();
+                    });
+                  },
+                ),
 
               Row(
                 children: [
@@ -240,57 +205,98 @@ class _EventFormState extends State<EventForm> {
                 height: 10.0,
               ),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        _formKey.currentState!.save();
-
-                        Event newEvent = Event(
-                            idHome: 0,
-                            idNature: _inSwitch ? Nature.inId : Nature.outId,
-                            idCategory: _idCategory!,
-                            date: _date!,
-                            text: _text,
-                            amount: _amount);
-
-                        Navigator.pop(context);
-
-                        // DAO
-                        if (widget.event != null) {
-                          newEvent.id = widget.event!.id;
-                          EventDao().update(newEvent);
-                        } else {
-                          EventDao().insert(newEvent);
-                        }
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Processing Data ok')),
-                        );
-                      }
-                    },
-                    child: widget.event != null
-                        ? const Text('Aggiorna')
-                        : const Text('Applica'),
-                  ),
-                  if (widget.event != null) ...[
-                    const SizedBox(
-                      width: 16.0,
+                  // Annulla: chiude il popup senza salvare.
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.grey[300],
+                      side: BorderSide(color: Colors.grey.shade500),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4.0),
+                      ),
                     ),
-                    ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Annulla'),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 231, 216, 80),
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4.0),
+                          ),
+                        ),
                         onPressed: () {
-                          Navigator.pop(context);
+                          if (_formKey.currentState!.validate()) {
+                            _formKey.currentState!.save();
 
-                          // DAO
-                          EventDao().delete(widget.event!);
+                            Event newEvent = Event(
+                                idHome: 0,
+                                idNature:
+                                    _inSwitch ? Nature.inId : Nature.outId,
+                                idCategory: _idCategory!,
+                                date: _date!,
+                                text: _text,
+                                amount: _amount);
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Processing Data ok')),
-                          );
+                            Navigator.pop(context);
+
+                            // DAO
+                            if (widget.event != null) {
+                              newEvent.id = widget.event!.id;
+                              EventDao().update(newEvent);
+                            } else {
+                              EventDao().insert(newEvent);
+                            }
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Evento salvato')),
+                            );
+                          }
                         },
-                        child: const Text('Cancella'))
-                  ]
+                        child: widget.event != null
+                            ? const Text('Aggiorna')
+                            : const Text('Applica'),
+                      ),
+                      if (widget.event != null) ...[
+                        const SizedBox(width: 8.0),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.danger,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4.0),
+                            ),
+                          ),
+                          onPressed: () async {
+                            final navigator = Navigator.of(context);
+                            final messenger = ScaffoldMessenger.of(context);
+                            final confirmed = await showConfirmDialog(
+                              context,
+                              title: 'Elimina evento',
+                              message:
+                                  'Vuoi eliminare definitivamente questo evento?',
+                            );
+                            if (!confirmed) return;
+
+                            navigator.pop();
+                            EventDao().delete(widget.event!);
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                  content: Text('Evento eliminato')),
+                            );
+                          },
+                          child: const Text('Elimina'),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               )
             ],

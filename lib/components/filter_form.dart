@@ -1,8 +1,7 @@
-import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
 import 'package:flutter/material.dart';
+import 'package:spese_casa_nuovo/components/date_picker_field.dart';
 import 'package:spese_casa_nuovo/dao/category_dao.dart';
 import 'package:spese_casa_nuovo/models/all_models.dart';
-import 'package:intl/intl.dart';
 
 class FilterForm extends StatefulWidget {
   const FilterForm({super.key});
@@ -45,40 +44,13 @@ class _FilterFormState extends State<FilterForm> {
     //  EventFilter _filter = EventFilter();
 
     Widget buildDatetime({bool isDateTo = true}) {
-      final format = DateFormat("dd/MM/yyyy");
-      return DateTimeField(
-        format: format,
+      return DatePickerField(
+        labelText: !isDateTo ? 'Data da' : 'Data a',
         onChanged: (value) => isDateTo ? _dateTo = value : _dateFrom = value,
-        decoration: InputDecoration(
-          labelText: !isDateTo ? 'Data da' : 'Data a',
-          labelStyle: Theme.of(context).textTheme.bodyLarge,
-        ),
-        onShowPicker: (context, currentValue) async {
-          final date = await showDatePicker(
-              context: context,
-              firstDate: DateTime(1900),
-              initialDate: currentValue ?? DateTime.now(),
-              lastDate: DateTime(2100));
-          if (date != null) {
-            if (!context.mounted) return currentValue;
-            final time = await showTimePicker(
-              context: context,
-              initialTime:
-                  TimeOfDay.fromDateTime(currentValue ?? DateTime.now()),
-            );
-            return DateTimeField.combine(date, time);
-          } else {
-            return currentValue;
-          }
-        },
         autovalidateMode: autoValidateMode,
         validator: (date) => (date == null && (isDateTo ? _toChk : _fromChk))
             ? 'Campo richiesto'
             : null,
-        onSaved: (dt) {
-          if (isDateTo) setState(() => _dateTo = dt);
-          if (!isDateTo) setState(() => _dateFrom = dt);
-        },
       );
     }
 
@@ -202,6 +174,15 @@ class _FilterFormState extends State<FilterForm> {
                 EventFilter newFilter = EventFilter();
                 if (_formKey.currentState!.validate()) {
                   _formKey.currentState!.save();
+
+                  if (_dateFrom != null &&
+                      _dateTo != null &&
+                      _dateTo!.isBefore(_dateFrom!)) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text(
+                            'La data "a" deve essere successiva alla data "da".')));
+                    return;
+                  }
 
                   newFilter = EventFilter(
                       filterCatagories: (_catChk) ? [_idCategory!] : [],

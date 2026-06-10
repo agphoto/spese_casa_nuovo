@@ -3,6 +3,7 @@ import 'package:spese_casa_nuovo/constants/all_constants.dart';
 import 'package:spese_casa_nuovo/dao/category_dao.dart';
 import 'package:spese_casa_nuovo/models/all_models.dart';
 import 'package:spese_casa_nuovo/screens/settings.dart';
+import 'package:spese_casa_nuovo/utils/dialogs.dart';
 
 class CategoryList extends StatefulWidget {
   final Function callback;
@@ -158,8 +159,24 @@ class CategoryItem extends StatelessWidget {
                 },
                 child: const Icon(Icons.edit)),
             GestureDetector(
-                onTap: () =>
-                    CategoryDao().delete(item).then((value) => callback()),
+                onTap: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final confirmed = await showConfirmDialog(
+                    context,
+                    title: 'Elimina categoria',
+                    message: 'Vuoi eliminare la categoria "${item.label}"?',
+                  );
+                  if (!confirmed) return;
+
+                  final count = await CategoryDao().delete(item);
+                  if (count <= 0) {
+                    messenger.showSnackBar(const SnackBar(
+                        content: Text(
+                            'Categoria in uso: impossibile eliminarla.')));
+                  } else {
+                    callback();
+                  }
+                },
                 child: const Icon(Icons.delete)),
           ],
         ),

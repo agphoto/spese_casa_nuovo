@@ -13,15 +13,12 @@ class CategoryDao {
 
   Future insert(Category category) async {
     await _categoryStore.add(await _db, category.toJson());
-    AppDatabase.instance.exportDb().then((value) => debugPrint(value));
     return;
   }
 
   Future update(Category category) async {
     final finder = Finder(filter: Filter.byKey(category.id));
     await _categoryStore.update(await _db, category.toJson(), finder: finder);
-
-    AppDatabase.instance.exportDb().then((value) => debugPrint(value));
     return;
   }
 
@@ -50,12 +47,15 @@ class CategoryDao {
         Filter.equals('idNature', Nature.inId),
         Filter.equals('idNature', Nature.outId)
       ]);
-    }
-    if (filter.filterIn) {
+    } else if (filter.filterIn) {
       f = Filter.equals('idNature', Nature.inId);
-    }
-    if (filter.filterOut) {
+    } else if (filter.filterOut) {
       f = Filter.equals('idNature', Nature.outId);
+    } else {
+      f = Filter.or([
+        Filter.equals('idNature', Nature.inId),
+        Filter.equals('idNature', Nature.outId)
+      ]);
     }
 
     final finder = Finder(sortOrders: [SortOrder('id')], filter: f);
