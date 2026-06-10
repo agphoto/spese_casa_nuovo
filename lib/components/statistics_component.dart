@@ -196,8 +196,9 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
     final List<Widget> rows = [];
     for (final element in model.selectedDatum) {
       final TimeSeriesSales datum = element.datum;
-      // La serie selezionata ('IN'/'OUT') dice dove cercare i movimenti.
-      final List<Event> source = element.series.id == 'IN' ? eIn : eOut;
+      // La serie selezionata ('Entrate'/'Uscite') dice dove cercare i movimenti.
+      final List<Event> source =
+          element.series.id == 'Entrate' ? eIn : eOut;
       final day = DateTime(datum.time.year, datum.time.month, datum.time.day);
       final dayEvents = source
           .where((e) =>
@@ -208,20 +209,31 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
 
       // Intestazione: data e totale del giorno.
       rows.add(Padding(
-        padding: const EdgeInsets.only(top: 6.0, bottom: 4.0),
+        padding: const EdgeInsets.only(top: 6.0, bottom: 6.0),
         child: Text(
           '${DateFormat('dd/MM/yyyy').format(day)} — ${formatCurrency(datum.sales)}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.0),
         ),
       ));
 
-      // Dettaglio dei singoli movimenti: testo, categoria e importo.
+      // Ogni movimento in stack: [categoria] / testo / cifra / divider.
       for (final e in dayEvents) {
         final categoryLabel = c
             .firstWhere((x) => x.id == e.idCategory,
                 orElse: () => Category(idNature: e.idNature, label: '—'))
             .label;
-        rows.add(Text('• ${e.text}  [$categoryLabel] : ${formatCurrency(e.amount)}'));
+        rows.add(Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('[$categoryLabel]',
+                style: const TextStyle(
+                    fontSize: 11.0, fontWeight: FontWeight.w600)),
+            Text(e.text, style: const TextStyle(fontSize: 11.0)),
+            Text(formatCurrency(e.amount),
+                style: const TextStyle(fontSize: 11.0)),
+            const Divider(height: 10.0),
+          ],
+        ));
       }
     }
     return rows;
@@ -232,11 +244,24 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
       context: context,
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
+        final media = MediaQuery.of(context).size;
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4.0),
+          ),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+          contentPadding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 0.0),
           title: const Text('Dettaglio'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: getSelectedDatum(model),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: media.height * 0.6,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: getSelectedDatum(model),
+              ),
             ),
           ),
           actions: <Widget>[
