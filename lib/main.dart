@@ -135,32 +135,54 @@ class _MyHomePageState extends State<MyHomePage> {
   int _selectedNavigationItemIndex = 0;
   EventFilter _filter = EventFilter();
   List<Category> categories = [];
-  int _quickRange = 0; // 0 = tutto, 1 = questo mese, 2 = ultimi 30 giorni
 
-  void _applyQuickRange(int range) {
+  // Due dimensioni di filtro indipendenti, combinate in AND:
+  //  - _quickRange: 0 = Tutto (nessun filtro data), 1 = Mese corrente, 2 = ultimi 15 giorni
+  //  - _filterIn / _filterOut: toggle nature. Se entrambi false o entrambi true
+  //    => mostra tutto (entrate + uscite).
+  int _quickRange = 0;
+  bool _filterIn = false;
+  bool _filterOut = false;
+
+  /// Ricostruisce [_filter] combinando intervallo data e nature (AND).
+  void _rebuildFilter() {
     final now = DateTime.now();
     DateTime? from;
     DateTime? to;
-    if (range == 1) {
+    if (_quickRange == 1) {
       // Intero mese di calendario: dal 1° al suo ultimo istante.
       from = DateTime(now.year, now.month, 1);
       to = DateTime(now.year, now.month + 1, 1)
           .subtract(const Duration(milliseconds: 1));
-    } else if (range == 2) {
+    } else if (_quickRange == 2) {
       // Ultimi 15 giorni, includendo tutti gli eventi di oggi (fino a fine
       // giornata) a prescindere dall'orario in cui si applica il filtro.
       from = DateTime(now.year, now.month, now.day)
           .subtract(const Duration(days: 15));
       to = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
     }
+    // Se nessuna o entrambe le nature sono selezionate -> mostra tutto.
+    final bool showBoth = _filterIn == _filterOut;
     setState(() {
-      _quickRange = range;
-      _filter = EventFilter(filterDateFrom: from, filterDateTo: to);
+      _filter = EventFilter(
+        filterIn: showBoth ? true : _filterIn,
+        filterOut: showBoth ? true : _filterOut,
+        filterDateFrom: from,
+        filterDateTo: to,
+      );
     });
   }
 
+  void _resetFilters() {
+    _quickRange = 0;
+    _filterIn = false;
+    _filterOut = false;
+    _rebuildFilter();
+  }
+
   Widget _buildQuickFilters() {
-    Widget chip(String label, int range) => Padding(
+    // Chip per l'intervallo data (mutuamente esclusive).
+    Widget rangeChip(String label, int range) => Padding(
           padding: const EdgeInsets.only(right: 6.0),
           child: ChoiceChip(
             label: Text(label, style: const TextStyle(fontSize: 12.0)),
@@ -168,8 +190,27 @@ class _MyHomePageState extends State<MyHomePage> {
             padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            showCheckmark: false,
             selected: _quickRange == range,
-            onSelected: (_) => _applyQuickRange(range),
+            onSelected: (_) {
+              _quickRange = range;
+              _rebuildFilter();
+            },
+          ),
+        );
+    // Chip toggle per la nature (entrate/uscite), in AND con il range.
+    Widget natureChip(String label, bool selected, VoidCallback onTap) =>
+        Padding(
+          padding: const EdgeInsets.only(right: 6.0),
+          child: ChoiceChip(
+            label: Text(label, style: const TextStyle(fontSize: 12.0)),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 2.0),
+            padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            showCheckmark: false,
+            selected: selected,
+            onSelected: (_) => onTap(),
           ),
         );
     return SizedBox(
@@ -178,9 +219,27 @@ class _MyHomePageState extends State<MyHomePage> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 6.0),
         children: [
-          chip('Tutto', 0),
-          chip('Questo mese', 1),
-          chip('Ultimi 15 giorni', 2),
+          rangeChip('Tutto', 0),
+          rangeChip('Mese', 1),
+          rangeChip('15 giorni', 2),
+          const SizedBox(width: 4.0),
+          natureChip('Entrate', _filterIn, () {
+            _filterIn = !_filterIn;
+            _rebuildFilter();
+          }),
+          natureChip('Uscite', _filterOut, () {
+            _filterOut = !_filterOut;
+            _rebuildFilter();
+          }),
+          // Reset di tutti i filtri (solo icona, per risparmiare spazio).
+          IconButton(
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+            iconSize: 20.0,
+            tooltip: 'Reset filtri',
+            icon: const Icon(Icons.filter_alt_off),
+            onPressed: _resetFilters,
+          ),
         ],
       ),
     );
@@ -264,77 +323,6 @@ class _MyHomePageState extends State<MyHomePage> {
             scale: 2.0,
           ),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Ink(
-              width: 30.0,
-              height: 30.0,
-              decoration: const ShapeDecoration(
-                color: Color.fromARGB(255, 231, 216, 80),
-                shape: CircleBorder(),
-              ),
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                splashRadius: 20,
-                icon: const Icon(Icons.add),
-                color: Colors.black,
-                onPressed: () {
-                  setState(() {
-                    _quickRange = 0;
-                    _filter = EventFilter(filterIn: true, filterOut: false);
-                  });
-                },
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Ink(
-              width: 30.0,
-              height: 30.0,
-              decoration: const ShapeDecoration(
-                color: Color.fromARGB(255, 231, 216, 80),
-                shape: CircleBorder(),
-              ),
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                splashRadius: 20,
-                icon: const Icon(Icons.remove),
-                color: Colors.black,
-                onPressed: () {
-                  setState(() {
-                    _quickRange = 0;
-                    _filter = EventFilter(filterIn: false, filterOut: true);
-                  });
-                },
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Ink(
-              width: 30.0,
-              height: 30.0,
-              decoration: const ShapeDecoration(
-                color: Color.fromARGB(255, 231, 216, 80),
-                shape: CircleBorder(),
-              ),
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                splashRadius: 20,
-                icon: const Icon(Icons.refresh),
-                color: Colors.black,
-                onPressed: () {
-                  setState(() {
-                    _quickRange = 0;
-                    _filter = EventFilter(filterIn: true, filterOut: true);
-                  });
-                },
-              ),
-            ),
-          )
-        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedNavigationItemIndex,
@@ -342,10 +330,7 @@ class _MyHomePageState extends State<MyHomePage> {
           _selectedNavigationItemIndex = value;
           switch (value) {
             case 0:
-              setState(() {
-                _quickRange = 0;
-                _filter = EventFilter();
-              });
+              _resetFilters();
               break;
 
             case 1:
@@ -413,7 +398,10 @@ class _MyHomePageState extends State<MyHomePage> {
               ).then((value) {
                 if (value != null) {
                   setState(() {
+                    // Filtro avanzato: deseleziona le chip rapide per coerenza.
                     _quickRange = 0;
+                    _filterIn = false;
+                    _filterOut = false;
                     _filter = value;
                   });
                 }

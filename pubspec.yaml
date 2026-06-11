@@ -1,7 +1,7 @@
 name: spese_casa_nuovo
 description: Quanto Spendo? — tracker di entrate e uscite domestiche.
 publish_to: "none"
-version: 5.0.1+3
+version: 5.1.0+4
 
 environment:
   # Updated to Dart 3+ to support modern Flutter 3.x features

@@ -108,13 +108,18 @@ class _EventsListState extends State<EventsList> {
 
   Widget _searchField() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0.0),
+      padding: const EdgeInsets.fromLTRB(8.0, 4.0, 8.0, 0.0),
       child: TextField(
         onChanged: (value) => setState(() => _searchQuery = value),
+        style: const TextStyle(fontSize: 13.0),
         decoration: const InputDecoration(
           isDense: true,
-          prefixIcon: Icon(Icons.search),
+          // Padding verticale ridotto per recuperare spazio in altezza.
+          contentPadding: EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
+          prefixIcon: Icon(Icons.search, size: 18.0),
+          prefixIconConstraints: BoxConstraints(minWidth: 32.0, minHeight: 0.0),
           hintText: 'Cerca per descrizione',
+          hintStyle: TextStyle(fontSize: 13.0),
           border: OutlineInputBorder(),
         ),
       ),

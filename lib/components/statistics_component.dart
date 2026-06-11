@@ -19,6 +19,30 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
   List<Event> eIn = [];
   List<Event> eOut = [];
 
+  // Quando si pizzica sul grafico (>=2 dita) blocchiamo lo scroll della
+  // pagina, altrimenti il SingleChildScrollView vince il gesto e scrolla
+  // invece di lasciare zoomare il grafico.
+  int _activePointers = 0;
+  ScrollPhysics? _scrollPhysics;
+
+  // Contatore per grafico (chiave = titolo): incrementandolo cambia la key del
+  // grafico, che viene ricostruito tornando al viewport iniziale -> reset zoom.
+  final Map<String, int> _chartEpoch = {};
+
+  void _resetZoom(String title) {
+    setState(() => _chartEpoch[title] = (_chartEpoch[title] ?? 0) + 1);
+  }
+
+  void _updateScrollLock(int delta) {
+    _activePointers += delta;
+    if (_activePointers < 0) _activePointers = 0;
+    final ScrollPhysics? wanted =
+        _activePointers >= 2 ? const NeverScrollableScrollPhysics() : null;
+    if (wanted.runtimeType != _scrollPhysics.runtimeType) {
+      setState(() => _scrollPhysics = wanted);
+    }
+  }
+
   Future<List<Category>> getCategoryList() =>
       CategoryDao().all(CategoryFilter(filterBoth: true));
 
@@ -76,7 +100,7 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
   /// con asse e scala propri: così entrate e uscite restano separate e non
   /// condividono la stessa scala verticale.
   Widget _lineChart(String title, List<TimeSeriesSales> data,
-      charts.Color color, Color totalColor) {
+      charts.Color color, Color totalColor, List<Event> source) {
     final axisCurrency = NumberFormat.decimalPattern('it_IT');
     // Totale della serie, calcolato in modo sicuro anche con lista vuota.
     final double total = data.fold<double>(0.0, (s, e) => s + e.sales);
@@ -96,9 +120,23 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 14.0)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 14.0)),
+                  // Reset dello zoom: riporta il grafico alla vista completa.
+                  InkWell(
+                    onTap: () => _resetZoom(title),
+                    customBorder: const CircleBorder(),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.refresh, size: 18.0),
+                    ),
+                  ),
+                ],
+              ),
               Text(
                 formatCurrency(total),
                 style: TextStyle(
@@ -113,7 +151,12 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
           height: 240,
           child: data.isEmpty
               ? const Center(child: Text('Nessun dato'))
-              : charts.TimeSeriesChart(
+              : Listener(
+                  key: ValueKey('$title-${_chartEpoch[title] ?? 0}'),
+                  onPointerDown: (_) => _updateScrollLock(1),
+                  onPointerUp: (_) => _updateScrollLock(-1),
+                  onPointerCancel: (_) => _updateScrollLock(-1),
+                  child: charts.TimeSeriesChart(
                   [series],
                   primaryMeasureAxis: charts.NumericAxisSpec(
                     tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
@@ -130,9 +173,17 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
                   selectionModels: [
                     charts.SelectionModelConfig(
                       type: charts.SelectionModelType.info,
-                      changedListener: _onSelectionChanged,
+                      // La sorgente (entrate/uscite) è passata esplicitamente:
+                      // non ci affidiamo all'id della serie per decidere dove
+                      // cercare i movimenti del giorno selezionato.
+                      changedListener: (model) =>
+                          _onSelectionChanged(model, source),
                     )
                   ],
+                  // Zoom col pinch e pan trascinando: agisce solo sull'asse
+                  // del dominio (tempo), il box che contiene il grafico resta
+                  // delle stesse dimensioni.
+                  behaviors: [charts.PanAndZoomBehavior()],
                   defaultRenderer: charts.LineRendererConfig(
                     includeArea: true,
                     areaOpacity: 0.12,
@@ -161,7 +212,8 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
                       ),
                     ),
                   ),
-                  animate: true,
+                    animate: true,
+                  ),
                 ),
         ),
       ],
@@ -188,7 +240,8 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
     super.initState();
   }
 
-  List<Widget> getSelectedDatum(charts.SelectionModel model) {
+  List<Widget> getSelectedDatum(
+      charts.SelectionModel model, List<Event> source) {
     if (!model.hasDatumSelection) {
       return [const Text('Nessun dato.')];
     }
@@ -196,9 +249,6 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
     final List<Widget> rows = [];
     for (final element in model.selectedDatum) {
       final TimeSeriesSales datum = element.datum;
-      // La serie selezionata ('Entrate'/'Uscite') dice dove cercare i movimenti.
-      final List<Event> source =
-          element.series.id == 'Entrate' ? eIn : eOut;
       final day = DateTime(datum.time.year, datum.time.month, datum.time.day);
       final dayEvents = source
           .where((e) =>
@@ -239,7 +289,8 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
     return rows;
   }
 
-  Future<void> _onSelectionChanged(charts.SelectionModel model) async {
+  Future<void> _onSelectionChanged(
+      charts.SelectionModel model, List<Event> source) async {
     return showDialog<void>(
       context: context,
       barrierDismissible: false, // user must tap button!
@@ -260,7 +311,7 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                children: getSelectedDatum(model),
+                children: getSelectedDatum(model, source),
               ),
             ),
           ),
@@ -291,6 +342,7 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
     final List<TimeSeriesSales> inDaily = _dailySeries(eIn);
 
     return SingleChildScrollView(
+      physics: _scrollPhysics,
       child: Container(
         padding: const EdgeInsets.only(top: 16.0),
         child: Column(
@@ -369,6 +421,7 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
               inDaily,
               charts.MaterialPalette.green.shadeDefault,
               Colors.green,
+              eIn,
             ),
             const SizedBox(height: 30),
             _lineChart(
@@ -376,6 +429,7 @@ class _StatisticsComponentState extends State<StatisticsComponent> {
               outDaily,
               charts.MaterialPalette.red.shadeDefault,
               Colors.red,
+              eOut,
             ),
           ],
         ),
