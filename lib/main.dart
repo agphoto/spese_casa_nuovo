@@ -291,15 +291,30 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Text(widget.title),
-            const SizedBox(height: 8.0),
-            Text('V$version', style: Theme.of(context).textTheme.bodySmall),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(widget.title),
+                const SizedBox(height: 4.0),
+                Text(
+                  'v$version',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        fontSize: 11.0,
+                      ),
+                ),
+              ],
+            ),
           ],
         ),
+        leadingWidth: 84.0,
         leading: IconButton(
+          padding: EdgeInsets.zero,
+          iconSize: 70.0,
           onPressed: () {
             AwesomeDialog(
               context: context,
@@ -319,8 +334,9 @@ class _MyHomePageState extends State<MyHomePage> {
             ).show();
           },
           icon: Image.asset(
-            'assets/images/logo.png',
-            scale: 2.0,
+            'assets/images/app_icon.png',
+            width: 70.0,
+            height: 70.0,
           ),
         ),
       ),

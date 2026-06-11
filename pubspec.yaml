@@ -1,7 +1,7 @@
 name: spese_casa_nuovo
 description: Quanto Spendo? — tracker di entrate e uscite domestiche.
 publish_to: "none"
-version: 5.1.0+4
+version: 5.1.1+5
 
 environment:
   # Updated to Dart 3+ to support modern Flutter 3.x features
@@ -37,7 +37,12 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/logo.png"
+  image_path: "assets/images/app_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
 
 flutter:
   uses-material-design: true
